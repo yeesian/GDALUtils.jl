@@ -82,11 +82,7 @@ elevations in `GUInt16` bands with a precision of 0.1, starting from -100.
 
 For file formats that don't know this intrinsically, a value of 0 is returned.
 """
-function getoffset(rasterband::RasterBand)
-    success = Ref{Cint}()
-    offset = GDAL.getrasteroffset(rasterband.ptr, success)
-    (offset, Bool(success[]))
-end
+getoffset(rasterband::RasterBand) = GDAL.getrasteroffset(rasterband.ptr, C_NULL)
 
 "Set scaling offset."
 setoffset(rasterband::RasterBand, offset::Cdouble) =
@@ -104,15 +100,35 @@ and starting from -100.
 
 For file formats that don't know this intrinsically a value of one is returned.
 """
-function getscale(rasterband::RasterBand)
-    success = Ref{Cint}()
-    scale = GDAL.getrasterscale(rasterband.ptr, success)
-    (scale, Bool(success[]))
-end
+getscale(rasterband::RasterBand) = GDAL.getrasterscale(rasterband.ptr, C_NULL)
 
 "Set scaling ratio."
 setscale(rasterband::RasterBand, scale::Cdouble) =
     GDAL.setrasterscale(rasterband.ptr, scale)
+
+"""
+Fetch the no data value for this band.
+
+If there is no out of data value, an out of range value will generally be
+returned. The no data value for a band is generally a special marker value
+used to mark pixels that are not valid data. Such pixels should generally
+not be displayed, nor contribute to analysis operations.
+
+### Parameters
+* `pbSuccess`   pointer to a boolean to use to indicate if a value is actually
+associated with this layer. May be `NULL` (default).
+
+### Returns
+the nodata value for this band.
+"""
+nullvalue(rasterband::RasterBand) =
+    GDAL.getrasternodatavalue(rasterband.ptr, C_NULL)
+
+"Set the no data value for this band."
+function setnullvalue(rasterband::RasterBand, value::Cdouble)
+    result = GDAL.setrasternodatavalue(rasterband.ptr, value)
+    (result == GDAL.CE_Failure) && error("Could not set nodatavalue")
+end
 
 """
 Copy all raster band raster data.
@@ -325,28 +341,6 @@ clearcolortable(rasterband::RasterBand) =
 #     GDALHasArbitraryOverviews(band)::Cint
 
 # """
-# Fetch the no data value for this band.
-
-# If there is no out of data value, an out of range value will generally be
-# returned. The no data value for a band is generally a special marker value
-# used to mark pixels that are not valid data. Such pixels should generally
-# not be displayed, nor contribute to analysis operations.
-
-# ### Parameters
-# * `pbSuccess`   pointer to a boolean to use to indicate if a value is actually
-# associated with this layer. May be `NULL` (default).
-
-# ### Returns
-# the nodata value for this band.
-# """
-# _getrasternodatavalue(band::GDALRasterBandH, pbSuccess::Ptr{Cint}) =
-#     GDALGetRasterNoDataValue(band, pbSuccess)::Cdouble
-
-# "Set the no data value for this band."
-# _setrasternodatavalue(band::GDALRasterBandH, value::Cdouble) =
-#     GDALSetRasterNoDataValue(band, value)::CPLErr
-
-# """
 # Fetch the list of category names for this raster.
 
 # The return list is a "StringList" in the sense of the CPL functions. That is a
@@ -493,9 +487,9 @@ clearcolortable(rasterband::RasterBand) =
 # _createmaskband(band::GDALRasterBandH,nFlags::Integer) =
 #     GDALCreateMaskBand(band, nFlags)::CPLErr
 
-function Base.show(io::IO, rasterband::RasterBand)
+function summarize(io::IO, rasterband::RasterBand)
     if checknull(rasterband)
-        print(io, "Null RasterBand")
+        println(io, "Null RasterBand")
     else
         access = _access[accessflag(rasterband)]
         color = nameof(getcolorinterp(rasterband))
@@ -503,6 +497,18 @@ function Base.show(io::IO, rasterband::RasterBand)
         ysize = height(rasterband)
         i = bandindex(rasterband)
         pxtype = pixeltype(rasterband)
-        print(io, "[$access] Band $i ($color): $xsize x $ysize ($pxtype)")
+        println(io, "[$access] Band $i ($color): $xsize x $ysize ($pxtype)")
     end
+end
+
+function Base.show(io::IO, rasterband::RasterBand)
+    summarize(io, rasterband)
+    (x,y) = getblocksize(rasterband)
+    sc = getscale(rasterband)
+    ofs = getoffset(rasterband)
+    norvw = noverview(rasterband)
+    ut = getunits(rasterband)
+    nv = nullvalue(rasterband)
+    println(io, "    units: $(sc)px + $(ofs)$ut")
+    print(io, "    overviews: $norvw, blocksize: $(x)x$(y), nodata: $nv")
 end
