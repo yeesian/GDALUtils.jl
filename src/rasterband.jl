@@ -170,7 +170,7 @@ noverview(rasterband::RasterBand) = GDAL.getoverviewcount(rasterband.ptr)
 
 "Fetch overview raster band object."
 overview(rasterband::RasterBand, i::Integer) =
-    GDAL.getoverview(rasterband.ptr, i-1)
+    RasterBand(GDAL.getoverview(rasterband.ptr, i-1))
 
 """
 Fetch best overview satisfying `nsamples` number of samples.
@@ -182,7 +182,7 @@ passed in will be returned if it has not overviews, or if none of the overviews
 have enough samples.
 """
 sampleoverview(rasterband::RasterBand, nsamples::Integer) =
-    GDAL.getrastersampleoverview(rasterband.ptr, nsamples)
+    RasterBand(GDAL.getrastersampleoverview(rasterband.ptr, nsamples))
 
 
 "Color Interpretation value for band"
@@ -509,6 +509,14 @@ function Base.show(io::IO, rasterband::RasterBand)
     norvw = noverview(rasterband)
     ut = getunits(rasterband)
     nv = nullvalue(rasterband)
-    println(io, "    units: $(sc)px + $(ofs)$ut")
-    print(io, "    overviews: $norvw, blocksize: $(x)x$(y), nodata: $nv")
+    println(io, "    blocksize: $(x)x$(y), nodata: $nv, units: $(sc)px + $(ofs)$ut")
+    print(io, "    overviews: ")
+    for i in 1:norvw
+        ovr_band = overview(rasterband, i)
+        print(io, "$(width(ovr_band)) x $(height(ovr_band)), ")
+        if i % 5 == 0
+            println(io, "")
+            print(io, "               ")
+        end
+    end
 end

@@ -407,8 +407,8 @@ function Base.show(io::IO, dataset::Dataset)
         println(io, "GDAL Dataset ($(driver(dataset)))")
         print(io, "\nFile(s): ")
         for (i,filename) in enumerate(filelist(dataset))
-            if i % 4 == 0 println() end
             print(io, "$filename ")
+            if i % 4 == 0 println() end
         end
         print(io, "\nDataset (width x height): ")
         println(io, "$(width(dataset)) x $(height(dataset)) (pixels)")
