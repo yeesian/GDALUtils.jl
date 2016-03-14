@@ -21,11 +21,29 @@ _gdaltype(::Type{Val{Int32}}) = GDAL.GDT_Int32
 _gdaltype(::Type{Val{Float32}}) = GDAL.GDT_Float32
 _gdaltype(::Type{Val{Float64}}) = GDAL.GDT_Float64
 
+const _access = Dict{UInt32, Symbol}(0 => :ReadOnly, 1 => :Update)
+
 """
 `TRUE` if the passed type is complex (one of `GDT_CInt16`, `GDT_CInt32`,
 `GDT_CFloat32` or `GDT_CFloat64`)
 """
 datatypeiscomplex(dtype::GDAL.GDALDataType) = Bool(GDAL.datatypeiscomplex(dtype))
+
+nullify(obj) = (obj.ptr = C_NULL)
+checknull(obj) = (obj.ptr == C_NULL)
+
+"""
+Returns a symbolic name for the color interpretation.
+
+This is derived from the enumerated item name with the `GCI_` prefix removed,
+but there are some variations. So `GCI_GrayIndex` returns "Gray" and
+`GCI_RedBand` returns "Red". The returned strings are static strings and should
+not be modified or freed by the application.
+"""
+nameof(color::GDAL.GDALColorInterp) = GDAL.getcolorinterpretationname(color)
+
+"Get color interpretation corresponding to the given symbolic name."
+colorinterp(name::AbstractString) = GDAL.getcolorinterpretationbyname(name)
 
 "Load a `NULL`-terminated list of strings"
 function loadstringlist(pstringlist::Ptr{Cstring})
@@ -41,23 +59,7 @@ function loadstringlist(pstringlist::Ptr{Cstring})
     stringlist
 end
 
-"""
-Fetch files forming dataset.
-
-Returns a list of files believed to be part of this dataset. If it returns an
-empty list of files it means there is believed to be no local file system files
-associated with the dataset (for instance a virtual dataset). The returned file
-list is owned by the caller and should be deallocated with `CSLDestroy()`.
-
-The returned filenames will normally be relative or absolute paths depending on
-the path used to originally open the dataset. The strings will be UTF-8 encoded
-"""
-filelist(dataset::Ptr{GDAL.GDALDatasetH}) =
-    loadstringlist(GDAL.C.GDALGetFileList(Ptr{Void}(dataset)))
-
-"""
-Fetch list of (non-empty) metadata domains. (Since: GDAL 1.11)
-"""
+"Fetch list of (non-empty) metadata domains. (Since: GDAL 1.11)"
 metadatadomainlist{T <: GDAL.GDALMajorObjectH}(obj::Ptr{T}) =
     loadstringlist(GDAL.getmetadatadomainlist(obj))
 
@@ -68,8 +70,5 @@ The returned string list is owned by the object, and may change at any time.
 It is formated as a "Name=value" list with the last pointer value being `NULL`.
 Note that relatively few formats return any metadata at this time.
 """
-getmetadata{T <: GDAL.GDALMajorObjectH}(obj::Ptr{T}, domain::AbstractString) =
+getmetadata{T <: GDAL.GDALMajorObjectH}(obj::Ptr{T}, domain::AbstractString = "") =
     loadstringlist(GDAL.getmetadata(obj, pointer(domain)))
-
-getmetadata{T <: GDAL.GDALMajorObjectH}(obj::Ptr{T}) =
-    loadstringlist(GDAL.getmetadata(obj, C_NULL))

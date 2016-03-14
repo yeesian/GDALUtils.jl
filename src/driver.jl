@@ -1,12 +1,12 @@
+type Driver{T}
+    ptr::Ptr{T}
+end
 
 "Fetch driver by index"
-driver(i::Integer) = GDAL.getdriver(i-1)
+driver(i::Integer) = Driver(GDAL.getdriver(i-1))
 
 "Fetch a driver based on the short name (such as `GTiff`)."
-driver(name::AbstractString) = GDAL.getdriverbyname(name)
-
-"Fetch the driver that the dataset was created with"
-driver(dataset::Ptr{GDAL.GDALDatasetH}) = GDAL.getdatasetdriver(dataset)
+driver(name::AbstractString) = Driver(GDAL.getdriverbyname(name))
 
 """
 Destroy a `GDALDriver`.
@@ -15,22 +15,22 @@ This is roughly equivelent to deleting the driver, but is guaranteed to take
 place in the GDAL heap. It is important this that function not be called on a
 driver that is registered with the `GDALDriverManager`.
 """
-destroy{T <: GDAL.GDALDriverH}(ptr::Ptr{T}) = GDAL.destroydriver(ptr)
+destroy(drv::Driver) = GDAL.destroydriver(drv.ptr)
 
 "Register a driver for use."
-register{T <: GDAL.GDALDriverH}(ptr::Ptr{T}) = GDAL.registerdriver(ptr)
+register(drv::Driver) = GDAL.registerdriver(drv.ptr)
 
-"Deregister the passed driver."
-deregister{T <: GDAL.GDALDriverH}(ptr::Ptr{T}) = GDAL.deregisterdriver(ptr)
+"Deregister the passed drv."
+deregister(drv::Driver) = GDAL.deregisterdriver(drv.ptr)
 
 "Return the list of creation options of the driver [an XML string]"
-options{T <: GDAL.GDALDriverH}(ptr::Ptr{T}) = GDAL.getdrivercreationoptionlist(ptr)
+options(drv::Driver) = GDAL.getdrivercreationoptionlist(drv.ptr)
 
 "Return the short name of a driver (e.g. `GTiff`)"
-shortname{T <: GDAL.GDALDriverH}(ptr::Ptr{T}) = GDAL.getdrivershortname(ptr)
+shortname(drv::Driver) = GDAL.getdrivershortname(drv.ptr)
 
 "Return the long name of a driver (e.g. `GeoTIFF`), or empty string."
-longname{T <: GDAL.GDALDriverH}(ptr::Ptr{T}) = GDAL.getdriverlongname(ptr)
+longname(drv::Driver) = GDAL.getdriverlongname(drv.ptr)
 
 "Fetch the number of registered drivers."
 ndriver() = GDAL.getdrivercount()
@@ -52,33 +52,43 @@ by invoking the Identify method of each registered `GDALDriver` in turn. The
 first driver that successful identifies the file name will be returned. If all
 drivers fail then `NULL` is returned.
 """
-identify(filename::AbstractString) = GDAL.identifydriver(filename, C_NULL)
+identify(filename::AbstractString) =
+    Driver(GDAL.identifydriver(filename, C_NULL))
 
-# """
-# Validate the list of creation options that are handled by a driver.
+"""
+Validate the list of creation options that are handled by a drv.
 
-# This is a helper method primarily used by `Create()` and `CreateCopy()` to
-# validate that the passed in list of creation options is compatible with the
-# `GDAL_DMD_CREATIONOPTIONLIST` metadata item defined by some drivers.
+This is a helper method primarily used by `Create()` and `CreateCopy()` to
+validate that the passed in list of creation options is compatible with the
+`GDAL_DMD_CREATIONOPTIONLIST` metadata item defined by some drivers.
 
-# See also: `GDALGetDriverCreationOptionList()`
+See also: `GDALGetDriverCreationOptionList()`
 
-# If the `GDAL_DMD_CREATIONOPTIONLIST` metadata item is not defined, this
-# function will return `TRUE`. Otherwise it will check that the keys and values
-# in the list of creation options are compatible with the capabilities declared
-# by the `GDAL_DMD_CREATIONOPTIONLIST` metadata item. In case of incompatibility
-# a (non fatal) warning will be emited and `FALSE` will be returned.
+If the `GDAL_DMD_CREATIONOPTIONLIST` metadata item is not defined, this
+function will return `TRUE`. Otherwise it will check that the keys and values
+in the list of creation options are compatible with the capabilities declared
+by the `GDAL_DMD_CREATIONOPTIONLIST` metadata item. In case of incompatibility
+a (non fatal) warning will be emited and `FALSE` will be returned.
 
-# ### Parameters
-# * `hDriver`     the handle of the driver with whom the lists of creation option
-# must be validated
-# * `options`     the list of creation options. An array of strings, whose last
-# element is a `NULL` pointer
+### Parameters
+* `hDriver`     the handle of the driver with whom the lists of creation option
+must be validated
+* `options`     the list of creation options. An array of strings, whose last
+element is a `NULL` pointer
 
-# ### Returns
-# `TRUE` if the list of creation options is compatible with the `Create()` and
-# `CreateCopy()` method of the driver, `FALSE` otherwise.
-# """
-# #validate(ptr::Ptr{GDALDriverH}) = GDAL.validatecreationoptions(hDriver, C_NULL)
-# validate{T <: AbstractString}(ptr::Ptr{GDAL.GDALDriverH}, options::Vector{T}) =
-#     Bool(GDAL.validatecreationoptions(ptr, Ptr{Ptr{UInt8}}(pointer(options))))
+### Returns
+`TRUE` if the list of creation options is compatible with the `Create()` and
+`CreateCopy()` method of the driver, `FALSE` otherwise.
+"""
+function validate{T <: AbstractString}(drv::Driver, options::Vector{T})
+    Bool(GDAL.validatecreationoptions(drv.ptr,
+                                      Ptr{Ptr{UInt8}}(pointer(options))))
+end
+
+function Base.show(io::IO, drv::Driver)
+    if checknull(drv)
+        print(io, "Null Driver")
+    else
+        print(io, "Driver: $(shortname(drv))/$(longname(drv))")
+    end
+end

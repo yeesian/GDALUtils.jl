@@ -1,4 +1,14 @@
 
+type RasterBand
+    ptr::Ptr{GDAL.GDALRasterBandH}
+
+    function RasterBand(ptr::Ptr{GDAL.GDALRasterBandH})
+        rasterband = new(ptr) # number of bands
+        finalizer(rasterband, nullify)
+        rasterband
+    end
+end
+
 """
 Fetch the "natural" block size of this band.
 
@@ -14,127 +24,31 @@ Note that the X and Y block sizes don't have to divide the image size evenly,
 meaning that right and bottom edge blocks may be incomplete. See `ReadBlock()`
 for an example of code dealing with these issues.
 """
-function getblocksize(rasterband::Ptr{GDAL.GDALRasterBandH})
+function getblocksize(rasterband::RasterBand)
     xy = Array(Cint, 2); x = pointer(xy); y = x + sizeof(Cint)
-    GDAL.getblocksize(rasterband, x, y)
+    GDAL.getblocksize(rasterband.ptr, x, y)
     xy
 end
 
 "Fetch the pixel data type for this band."
-datatypeof(rasterband::Ptr{GDAL.GDALRasterBandH}) = _jltype(GDAL.getrasterdatatype(rasterband))
-
-"""
-Read/write a region of image data for this band.
-
-This method allows reading a region of a `GDALRasterBand` into a buffer, or
-writing data from a buffer into a region of a `GDALRasterBand`. It
-automatically takes care of data type translation if the data type (`eBufType`)
-of the buffer is different than that of the `GDALRasterBand`. The method also
-takes care of image decimation / replication if the buffer size
-`(nBufXSize x nBufYSize)` is different than the size of the region being
-accessed `(nXSize x nYSize)`.
-
-The `nPixelSpace` and `nLineSpace` parameters allow reading into or writing
-from unusually organized buffers. This is primarily used for buffers containing
-more than one bands raster data in interleaved format.
-
-Some formats may efficiently implement decimation into a buffer by reading from
-lower resolution overview images.
-
-For highest performance full resolution data access, read and write on "block
-boundaries" returned by `GetBlockSize()`, or use the `ReadBlock()` and 
-`WriteBlock()` methods.
-
-### Parameters
-* `eRWFlag`     Either GF_Read to read a region of data, or GF_Write to write a
-region of data.
-* `nXOff`       The pixel offset to the top left corner of the region of the
-band to be accessed. This would be zero to start from the left side.
-* `nYOff`       The line offset to the top left corner of the region of the
-band to be accessed. This would be zero to start from the top.
-* `nXSize`      The width of the region of the band to be accessed in pixels.
-* `nYSize`      The height of the region of the band to be accessed in lines.
-* `pData`       The buffer into which the data should be read, or from which it
-should be written. This buffer must contain at least `(nBufXSize * nBufYSize)`
-words of type `eBufType`. It is organized in left to right, top to bottom pixel
-order. Spacing is controlled by the `nPixelSpace`, and `nLineSpace` parameters.
-* `nBXSize`     The width of the buffer image into which the desired region is
-to be read, or from which it is to be written.
-* `nBYSize`     The height of the buffer image into which the desired region is
-to be read, or from which it is to be written.
-* `eBufType`    The type of the pixel values in the `buffer`. The pixel values
-will be auto-translated to/from the `GDALRasterBand` data type as needed.
-* `nPixelSpace` The byte offset from the start of one pixel value in `buffer`
-to the start of the next pixel value within a scanline. If defaulted (0) the
-size of the datatype `eBufType` is used.
-* `nLineSpace`  The byte offset from the start of one scanline in `buffer` to
-the start of the next. If defaulted (0) the size of the datatype
-`(eBufType * nBufXSize)` is used.
-* `psExtraArg`  (new in GDAL 2.0) pointer to a GDALRasterIOExtraArg structure
-with additional arguments to specify resampling and progress callback, or
-`NULL` for default behaviour. The `GDAL_RASTERIO_RESAMPLING` configuration
-option can also be defined to override the default resampling to one of
-`BILINEAR`, `CUBIC`, `CUBICSPLINE`, `LANCZOS`, `AVERAGE` or `MODE`.
-
-### Returns
-`CE_Failure` if the access fails, otherwise `CE_None`.
-"""
-function rasterio!{T <: Real}(rasterband::Ptr{GDAL.GDALRasterBandH},
-                              buffer::Array{T,2},
-                              _width::Integer,
-                              _height::Integer,
-                              xoffset::Integer = 0,
-                              yoffset::Integer = 0,
-                              access::GDAL.GDALRWFlag = GDAL.GF_Read,
-                              nPixelSpace::Integer = 0,
-                              nLineSpace::Integer = 0)
-    xsize, ysize = size(buffer)
-    GDAL.rasterio(rasterband, access, xoffset, yoffset, _width, _height,
-                  pointer(buffer), xsize, ysize, _gdaltype(T), nPixelSpace, nLineSpace)
-    buffer
-end
-
-function rasterio!{T <: Real}(rasterband::Ptr{GDAL.GDALRasterBandH},
-                              buffer::Array{T,2},
-                              xoffset::Integer = 0,
-                              yoffset::Integer = 0,
-                              access::GDAL.GDALRWFlag = GDAL.GF_Read,
-                              nPixelSpace::Integer = 0,
-                              nLineSpace::Integer = 0)
-    rasterio!(rasterband, buffer, width(rasterband), height(rasterband),
-              xoffset, yoffset, access, nPixelSpace, nLineSpace)
-end
-
-function rasterio!{T <: Real, U <: Integer}(rasterband::Ptr{GDAL.GDALRasterBandH},
-                                            buffer::Array{T,2},
-                                            rows::UnitRange{U},
-                                            cols::UnitRange{U},
-                                            access::GDAL.GDALRWFlag = GDAL.GF_Read,
-                                            nPixelSpace::Integer = 0,
-                                            nLineSpace::Integer = 0)
-    _width = cols[end] - cols[1] + 1
-    _width < 0 && error("invalid window width")
-    _height = rows[end] - rows[1] + 1
-    _height < 0 && error("invalid window height")
-    rasterio!(rasterband, buffer, _width, _height, cols[1], rows[1], access,
-              nPixelSpace, nLineSpace)
-end
+pixeltype(rasterband::RasterBand) =
+    _jltype(GDAL.getrasterdatatype(rasterband.ptr))
 
 "Fetch the width in pixels of this band."
-width(rasterband::Ptr{GDAL.GDALRasterBandH}) = GDAL.getrasterbandxsize(rasterband)
+width(rasterband::RasterBand) = GDAL.getrasterbandxsize(rasterband.ptr)
 
 "Fetch the height in pixels of this band."
-height(rasterband::Ptr{GDAL.GDALRasterBandH},) = GDAL.getrasterbandysize(rasterband)
+height(rasterband::RasterBand) = GDAL.getrasterbandysize(rasterband.ptr)
 
 "Find out if we have update permission for this band."
-accessflag(rasterband::Ptr{GDAL.GDALRasterBandH}) = GDALGetRasterAccess(rasterband)
+accessflag(rasterband::RasterBand) = GDAL.getrasteraccess(rasterband.ptr)
 
 """Fetch the band number (1+) within its dataset, or 0 if unknown.
 
 This method may return a value of 0 to indicate overviews, or free-standing
 `GDALRasterBand` objects without a relationship to a dataset.
 """
-bandindex(rasterband::Ptr{GDAL.GDALRasterBandH}) = GDAL.getbandnumber(rasterband)
+bandindex(rasterband::RasterBand) = GDAL.getbandnumber(rasterband.ptr)
 
 """
 Fetch the handle to its dataset handle, or `NULL` if this cannot be determined.
@@ -142,7 +56,8 @@ Fetch the handle to its dataset handle, or `NULL` if this cannot be determined.
 Note that some `GDALRasterBands` are not considered to be a part of a dataset,
 such as overviews or other "freestanding" bands.
 """
-datasetof(rasterband::Ptr{GDAL.GDALRasterBandH}) = GDAL.getbanddataset(rasterband)
+datasetof(rasterband::RasterBand) =
+    Dataset(GDAL.getbanddataset(rasterband.ptr))
 
 """
 Return raster unit type.
@@ -150,11 +65,11 @@ Return raster unit type.
 Return a name for the units of this raster's values. For instance, it might be
 "m" for an elevation model in meters, or "ft" for feet.
 """
-getunittype(rasterband::Ptr{GDAL.GDALRasterBandH}) = GDAL.getrasterunittype(rasterband)
+getunits(rasterband::RasterBand) = GDAL.getrasterunittype(rasterband.ptr)
 
 "Set unit type."
-setunittype(rasterband::Ptr{GDAL.GDALRasterBandH}, newvalue::AbstractString) =
-    GDAL.setrasterunittype(rasterband, newvalue)
+setunits(rasterband::RasterBand, unitstring::AbstractString) =
+    GDAL.setrasterunittype(rasterband.ptr, unitstring)
 
 """
 Fetch the raster value offset.
@@ -167,15 +82,15 @@ elevations in `GUInt16` bands with a precision of 0.1, starting from -100.
 
 For file formats that don't know this intrinsically, a value of 0 is returned.
 """
-function getoffset(rasterband::Ptr{GDAL.GDALRasterBandH})
+function getoffset(rasterband::RasterBand)
     success = Ref{Cint}()
-    offset = GDAL.getrasteroffset(rasterband, success)
+    offset = GDAL.getrasteroffset(rasterband.ptr, success)
     (offset, Bool(success[]))
 end
 
 "Set scaling offset."
-setoffset(rasterband::Ptr{GDAL.GDALRasterBandH}, offset::Cdouble) =
-    GDAL.setrasteroffset(band, offset)
+setoffset(rasterband::RasterBand, offset::Cdouble) =
+    GDAL.setrasteroffset(band.ptr, offset)
 
 """
 Fetch the raster value scale.
@@ -189,15 +104,15 @@ and starting from -100.
 
 For file formats that don't know this intrinsically a value of one is returned.
 """
-function getscale(rasterband::Ptr{GDAL.GDALRasterBandH})
+function getscale(rasterband::RasterBand)
     success = Ref{Cint}()
-    scale = GDAL.getrasterscale(rasterband, success)
+    scale = GDAL.getrasterscale(rasterband.ptr, success)
     (scale, Bool(success[]))
 end
 
 "Set scaling ratio."
-setscale(rasterband::Ptr{GDAL.GDALRasterBandH},
-         scale::Cdouble) = GDAL.setrasterscale(band, scale)
+setscale(rasterband::RasterBand, scale::Cdouble) =
+    GDAL.setrasterscale(rasterband.ptr, scale)
 
 """
 Copy all raster band raster data.
@@ -223,15 +138,74 @@ More options may be supported in the future.
 ### Returns
 `CE_None` on success, or `CE_Failure` on failure.
 """
-copyband(sourceband::Ptr{GDAL.GDALRasterBandH},
-         destband::Ptr{GDAL.GDALRasterBandH},
-         options, progressfunc = C_NULL, progressdata = C_NULL) =
-    GDAL.rasterbandcopywholeraster(sourceband, destband, pointer(options),
-                                   progressfunc, progressdata)
+copyband(source::RasterBand, dest::RasterBand, options) =
+    GDAL.rasterbandcopywholeraster(source.ptr, dest.ptr, pointer(options))
 
-copyband(sourceband::Ptr{GDAL.GDALRasterBandH},
-         destband::Ptr{GDAL.GDALRasterBandH}) =
-    GDAL.rasterbandcopywholeraster(sourceband, destband, C_NULL, C_NULL, C_NULL)
+copyband(source::RasterBand, dest::RasterBand) =
+    GDAL.rasterbandcopywholeraster(source.ptr, dest.ptr, C_NULL,C_NULL,C_NULL)
+
+"""
+Return the number of overview layers available.
+
+### Returns
+overview count, zero if none.
+"""
+noverview(rasterband::RasterBand) = GDAL.getoverviewcount(rasterband.ptr)
+
+"Fetch overview raster band object."
+overview(rasterband::RasterBand, i::Integer) =
+    GDAL.getoverview(rasterband.ptr, i-1)
+
+"""
+Fetch best overview satisfying `nsamples` number of samples.
+
+Returns the most reduced overview of the given band that still satisfies the
+desired number of samples `nsamples`. This function can be used with zero as the
+number of desired samples to fetch the most reduced overview. The same band as was
+passed in will be returned if it has not overviews, or if none of the overviews
+have enough samples.
+"""
+sampleoverview(rasterband::RasterBand, nsamples::Integer) =
+    GDAL.getrastersampleoverview(rasterband.ptr, nsamples)
+
+
+"Color Interpretation value for band"
+getcolorinterp(rasterband::RasterBand) =
+    GDAL.getrastercolorinterpretation(rasterband.ptr)
+
+"Set color interpretation of a band."
+setcolorinterp(rasterband::RasterBand, color::GDAL.GDALColorInterp) =
+    GDAL.setrastercolorinterpretation(rasterband.ptr, color)
+
+"""
+Fetch the color table associated with band.
+
+If there is no associated color table, the return result is `NULL`. The
+returned color table remains owned by the `GDALRasterBand`, and can't be
+depended on for long, nor should it ever be modified by the caller.
+"""
+getcolortable(rasterband::RasterBand) =
+    GDAL.getrastercolortable(rasterband.ptr)
+
+"""
+Set the raster color table.
+
+The driver will make a copy of all desired data in the colortable. It remains
+owned by the caller after the call.
+
+### Parameters
+* `poCT`    the color table to apply. This may be NULL to clear the color table
+(where supported).
+
+### Returns
+`CE_None` on success, or `CE_Failure` on failure. If the action is unsupported
+by the driver, a value of `CE_Failure` is returned, but no error is issued.
+"""
+setcolortable(rasterband::RasterBand, colortable::Ptr{GDAL.GDALColorTableH}) =
+    GDAL.setrastercolortable(rasterband.ptr, colortable)
+
+clearcolortable(rasterband::RasterBand) =
+    GDAL.setrastercolortable(rasterband.ptr, C_NULL)
 
 # """
 # Generate downsampled overviews.
@@ -349,30 +323,6 @@ copyband(sourceband::Ptr{GDAL.GDALRasterBandH},
 # """
 # _hasarbitraryoverviews(band::GDALRasterBandH) =
 #     GDALHasArbitraryOverviews(band)::Cint
-
-"""
-Return the number of overview layers available.
-
-### Returns
-overview count, zero if none.
-"""
-noverview(rasterband::Ptr{GDAL.GDALRasterBandH}) = GDAL.getoverviewcount(rasterband)
-
-"Fetch overview raster band object."
-overview(rasterband::Ptr{GDAL.GDALRasterBandH}, i::Integer) =
-    GDAL.getoverview(band, i-1)
-
-"""
-Fetch best overview satisfying `nsamples` number of samples.
-
-Returns the most reduced overview of the given band that still satisfies the
-desired number of samples `nsamples`. This function can be used with zero as the
-number of desired samples to fetch the most reduced overview. The same band as was
-passed in will be returned if it has not overviews, or if none of the overviews
-have enough samples.
-"""
-sampleoverview(rasterband::Ptr{GDAL.GDALRasterBandH}, nsamples::Integer) =
-    GDAL.getrastersampleoverview(rasterband, nsamples)
 
 # """
 # Fetch the no data value for this band.
@@ -542,3 +492,17 @@ sampleoverview(rasterband::Ptr{GDAL.GDALRasterBandH}, nsamples::Integer) =
 # """
 # _createmaskband(band::GDALRasterBandH,nFlags::Integer) =
 #     GDALCreateMaskBand(band, nFlags)::CPLErr
+
+function Base.show(io::IO, rasterband::RasterBand)
+    if checknull(rasterband)
+        print(io, "Null RasterBand")
+    else
+        access = _access[accessflag(rasterband)]
+        color = nameof(getcolorinterp(rasterband))
+        xsize = width(rasterband)
+        ysize = height(rasterband)
+        i = bandindex(rasterband)
+        pxtype = pixeltype(rasterband)
+        print(io, "[$access] Band $i ($color): $xsize x $ysize ($pxtype)")
+    end
+end
