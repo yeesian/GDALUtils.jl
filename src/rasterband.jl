@@ -513,7 +513,7 @@ function Base.show(io::IO, rasterband::RasterBand)
     print(io, "    overviews: ")
     for i in 1:norvw
         ovr_band = overview(rasterband, i)
-        print(io, "$(width(ovr_band)) x $(height(ovr_band)), ")
+        print(io, "$(width(ovr_band))x$(height(ovr_band)), ")
         if i % 5 == 0
             println(io, "")
             print(io, "               ")
