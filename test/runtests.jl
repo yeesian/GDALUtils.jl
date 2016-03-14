@@ -36,24 +36,19 @@ GU.create("pyrasterio/example.tif",
 end
 
 GU.read("pyrasterio/RGB.byte.tif") do src
-    GU.create("pyrasterio/example2.tif", 500, 300, 3, UInt8, "GTiff") do dst
-
-        rgb = GU.fetch(src, Cint[1,2,3]) # fetch bands 1 - 3
-        # You can update all 3 bands simultaneously
-        GU.update!( dst,
-                    rgb, # image to "burn" into destination dataset
-                    Cint[1,2,3], # indices of the bands to be updated
-                    30:269, # along (window) xcoords 30 to 269
-                    50:313) # along (window) ycoords 50 to 313
-    end
+GU.create("pyrasterio/example2.tif", 500, 300, 3, UInt8, "GTiff") do dst
+    rgb = GU.fetch(src, Cint[1,2,3]) # fetch bands 1 - 3
+    # You can update all 3 bands simultaneously
+    GU.update!(dst, rgb, # image to "burn" into destination dataset
+               Cint[1,2,3], # indices of the bands to be updated
+               30:269, # along (window) xcoords 30 to 269
+               50:313) # along (window) ycoords 50 to 313
+end
 end
 
 GU.read("pyrasterio/RGB.byte.tif") do src
     rgb = GU.fetch(src, Cint[1,2,3], 350:410, 350:450)
     GU.create("pyrasterio/example3.tif", 500, 300, 3, eltype(rgb), "GTiff") do dst
-
-        GU.update!(dst, rgb, Cint[1,2,3],
-                   1:240,
-                   1:400)
+        GU.update!(dst, rgb, Cint[1,2,3], 1:240, 1:400)
     end
 end
