@@ -52,4 +52,10 @@ julia> GU.fetchband(raster, 3)
     blocksize: 256x256, nodata: -1.0e10, units: 1.0px + 0.0
     overviews: 1024 x 512, 512 x 256, 256 x 128, 128 x 64, 64 x 32,
                32 x 16, 16 x 8,
+
+julia> GU.close(raster)
+Ptr{GDAL.GDALDatasetH} @0x0000000000000000
+
+julia> raster
+Closed Dataset
 ```
