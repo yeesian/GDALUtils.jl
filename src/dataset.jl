@@ -142,6 +142,15 @@ function createcopy{T <: AbstractString}(
                             C_NULL, C_NULL))
 end
 
+function createcopy(f::Function, args...)
+    ds = createcopy(args...)
+    try
+        f(ds)
+    finally
+        close(ds)
+    end
+end
+
 function create(filename::AbstractString,
                 width::Int,
                 height::Int,
@@ -152,6 +161,15 @@ function create(filename::AbstractString,
     Dataset(GDAL.create(GDAL.getdriverbyname(drivername), filename,
                         width, height, nbands, _gdaltype(dtype),
                         Ptr{Ptr{UInt8}}(pointer(options))))
+end
+
+function create(f::Function, args...)
+    ds = create(args...)
+    try
+        f(ds)
+    finally
+        close(ds)
+    end
 end
 
 """
@@ -193,15 +211,40 @@ driver on how to access a dataset. It should be in UTF-8 encoding.
 * `access`      the desired access, either `GA_Update` or `GA_ReadOnly`. Many
 drivers support only read only access.
 """
-function open(filename::AbstractString,
-              access::GDAL.GDALAccess = GDAL.GA_ReadOnly,
-              shared::Bool = false)
+function read(filename::AbstractString, shared::Bool = false)
     if shared
-        dataset = GDAL.openshared(filename, access)
+        dataset = GDAL.openshared(filename, GDAL.GA_ReadOnly)
     else
-        dataset = GDAL.open(filename, access)
+        dataset = GDAL.open(filename, GDAL.GA_ReadOnly)
     end
     Dataset(dataset)
+end
+
+function read(f::Function, args...)
+    ds = read(args...)
+    try
+        f(ds)
+    finally
+        close(ds)
+    end
+end
+
+function update(filename::AbstractString, shared::Bool = false)
+    if shared
+        dataset = GDAL.openshared(filename, GDAL.GA_Update)
+    else
+        dataset = GDAL.open(filename, GDAL.GA_Update)
+    end
+    Dataset(dataset)
+end
+
+function update(f::Function, args...)
+    ds = update(args...)
+    try
+        f(ds)
+    finally
+        close(ds)
+    end
 end
 
 function write(filename::AbstractString,
@@ -231,6 +274,15 @@ function write(dataset::Dataset,
     checknull(dataset) && error("Can't write closed dataset")
     close(createcopy(GDAL.getdriverbyname(name), filename,
                      dataset.ptr, strict, options))
+end
+
+function write(f::Function, args...)
+    ds = write(args...)
+    try
+        f(ds)
+    finally
+        close(ds)
+    end
 end
 
 "Fetch raster width in pixels."
