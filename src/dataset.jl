@@ -412,10 +412,11 @@ function Base.show(io::IO, dataset::Dataset)
         end
         print(io, "\nDataset (width x height): ")
         println(io, "$(width(dataset)) x $(height(dataset)) (pixels)")
-        for i in 1:min(nband_, 5)
-            println(io, "  $(fetchband(dataset, i))")
+        for i in 1:min(nband_, 3)
+            print(io, "  ")
+            summarize(io, fetchband(dataset, i))
         end
-        nband_ > 5 && println(io, "  ...")
+        nband_ > 3 && println(io, "  ...")
         print(io, "Number of bands: $(nband_)")
     end
 end
