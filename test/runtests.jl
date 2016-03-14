@@ -1,8 +1,6 @@
 using FactCheck
 import GDALUtils; const GU = GDALUtils
 
-raster = GU.read("pyrasterio/RGB.byte.tif")
-
 GU.read("pyrasterio/RGB.byte.tif") do raster
     @fact GU.projWKT(raster) --> "PROJCS[\"UTM Zone 18, Northern Hemisphere\",GEOGCS[\"Unknown datum based upon the WGS 84 ellipsoid\",DATUM[\"Not_specified_based_on_WGS_84_spheroid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",-75],PARAMETER[\"scale_factor\",0.9996],PARAMETER[\"false_easting\",500000],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]]]"
     @fact GU.getgeotransform(raster) --> roughly([101985.0,300.0379266750948,0.0,2.826915e6,0.0,-300.041782729805])
