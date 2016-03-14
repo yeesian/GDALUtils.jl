@@ -158,7 +158,7 @@ function create(filename::AbstractString,
                 dtype::DataType,
                 drivername::AbstractString,
                 options::Vector{ASCIIString} = Vector{ASCIIString}())
-    Dataset(GDAL.create(GDAL.getdriverbyname(drivername), filename,
+    Dataset(GDAL.create(GDAL.gdalgetdriverbyname(drivername), filename,
                         width, height, nbands, _gdaltype(dtype),
                         Ptr{Ptr{UInt8}}(pointer(options))))
 end
@@ -252,8 +252,7 @@ function write(filename::AbstractString,
                strict::Bool = false,
                options::Vector{ASCIIString} = Vector{ASCIIString}())
     checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(driver(dataset.ptr), filename,
-                     dataset.ptr, strict, options))
+    close(createcopy(driver(dataset), filename, dataset, strict, options))
 end
 
 function write(dataset::Dataset,
@@ -262,8 +261,7 @@ function write(dataset::Dataset,
                strict::Bool = false,
                options::Vector{ASCIIString} = Vector{ASCIIString}())
     checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(Driver.ptr, filename,
-                     dataset.ptr, strict, options))
+    close(createcopy(driver, filename, dataset, strict, options))
 end
 
 function write(dataset::Dataset,
@@ -272,8 +270,7 @@ function write(dataset::Dataset,
                strict::Bool = false,
                options::Vector{ASCIIString} = Vector{ASCIIString}())
     checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(GDAL.getdriverbyname(name), filename,
-                     dataset.ptr, strict, options))
+    close(createcopy(driver(name), filename, dataset, strict, options))
 end
 
 function write(f::Function, args...)

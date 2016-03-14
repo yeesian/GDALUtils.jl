@@ -6,7 +6,7 @@ end
 driver(i::Integer) = Driver(GDAL.getdriver(i-1))
 
 "Fetch a driver based on the short name (such as `GTiff`)."
-driver(name::AbstractString) = Driver(GDAL.getdriverbyname(name))
+driver(name::AbstractString) = Driver(GDAL.gdalgetdriverbyname(name))
 
 """
 Destroy a `GDALDriver`.
