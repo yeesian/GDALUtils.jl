@@ -11,9 +11,9 @@ GU.resetreading(layer)
 
 featuredefn = GU.layerdefn(layer)
 @fact GU.nfield(featuredefn) --> 2
-fielddefn = GU.fielddefn(featuredefn, 0)
+fielddefn = GU.getfielddefn(featuredefn, 0)
 @fact GDAL.gettype(fielddefn) --> GDAL.OFTReal
-fielddefn = GU.fielddefn(featuredefn, 1)
+fielddefn = GU.getfielddefn(featuredefn, 1)
 @fact GDAL.gettype(fielddefn) --> GDAL.OFTString
 
 feature = GU.fetchnext(layer)

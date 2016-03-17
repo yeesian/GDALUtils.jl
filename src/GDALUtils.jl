@@ -10,8 +10,9 @@ module GDALUtils
     include("dataset.jl")
     include("rasterband.jl")
     include("rasterio.jl")
-    include("geometry.jl")
-    include("featurelayer.jl")
-    include("misc.jl")
+    include("ogr/geometry.jl")
+    include("ogr/featurelayer.jl")
+    include("ogr/featuredefn.jl")
+    include("ogr/fielddefn.jl")
 
 end # module

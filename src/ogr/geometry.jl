@@ -947,5 +947,6 @@ function polygonfromedges(lines::Geometry, besteffort::Bool, autoclose::Bool, to
     result = Geometry(GDAL.buildpolygonfromedges(lines.ptr, besteffort, autoclose, tol, peErr))
     if peErr[] != OGRERR_NONE
         error("Failed to build polygon from edges.")
+    end
     Geometry(result)
 end
