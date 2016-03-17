@@ -32,22 +32,10 @@ end
 
 type RasterBand
     ptr::Ptr{GDAL.GDALRasterBandH}
-
-    function RasterBand(ptr::Ptr{GDAL.GDALRasterBandH})
-        rasterband = new(ptr) # number of bands
-        finalizer(rasterband, nullify)
-        rasterband
-    end
 end
 
 type Dataset
     ptr::Ptr{GDAL.GDALDatasetH}
-
-    function Dataset(ptr::Ptr{GDAL.GDALDatasetH})
-        dataset = new(ptr) # number of bands
-        finalizer(dataset, nullify)
-        dataset
-    end
 end
 
 nullify(obj) = (obj.ptr = C_NULL)

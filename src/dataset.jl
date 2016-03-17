@@ -64,12 +64,10 @@ force pixel interleaved operation and "COMPRESSED=YES" to force alignment on
 target dataset block sizes to achieve best compression. More options may be
 supported in the future.
 """
-copyraster{T <: AbstractString}(source::Dataset,
-                                dest::Dataset,
-                                options) =
+copyraster(source::Dataset, dest::Dataset, options) =
     GDAL.datasetcopywholeraster(source.ptr, dest.ptr,
                                 Ptr{Ptr{UInt8}}(pointer(options)),
-                                C_NULL, C_NULL)
+                                Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL)
 
 """
 Create a copy of a dataset.
@@ -128,7 +126,8 @@ function createcopy{T <: AbstractString}(
                     options::Vector{T},
                     strict::Bool = false)
     Dataset(GDAL.createcopy(driver.ptr, filename, dataset.ptr, strict,
-                            Ptr{Ptr{UInt8}}(pointer(options)), C_NULL, C_NULL))
+                            Ptr{Ptr{UInt8}}(pointer(options)),
+                            Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL))
 end
 
 function createcopy(f::Function, args...)
