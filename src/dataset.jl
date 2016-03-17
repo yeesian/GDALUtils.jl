@@ -152,13 +152,25 @@ function createcopy(f::Function, args...)
 end
 
 function create(filename::AbstractString,
-                width::Int,
-                height::Int,
-                nbands::Int,
-                dtype::DataType,
-                drivername::AbstractString,
+                driver::Driver,
+                width::Int = 0,
+                height::Int = 0,
+                nbands::Int = 0,
+                dtype::DataType = Any,
                 options::Vector{ASCIIString} = Vector{ASCIIString}())
-    Dataset(GDAL.create(GDAL.gdalgetdriverbyname(drivername), filename,
+    Dataset(GDAL.create(driver.ptr, filename,
+                        width, height, nbands, _gdaltype(dtype),
+                        Ptr{Ptr{UInt8}}(pointer(options))))
+end
+
+function create(filename::AbstractString,
+                drivername::AbstractString,
+                width::Int = 0,
+                height::Int = 0,
+                nbands::Int = 0,
+                dtype::DataType = Any,
+                options::Vector{ASCIIString} = Vector{ASCIIString}())
+    Dataset(GDAL.create(GDAL.getdriverbyname(drivername), filename,
                         width, height, nbands, _gdaltype(dtype),
                         Ptr{Ptr{UInt8}}(pointer(options))))
 end
@@ -215,7 +227,8 @@ function read(filename::AbstractString, shared::Bool = false)
     if shared
         dataset = GDAL.openshared(filename, GDAL.GA_ReadOnly)
     else
-        dataset = GDAL.open(filename, GDAL.GA_ReadOnly)
+        dataset = GDAL.openex(filename, GDAL.GA_ReadOnly,
+                              C_NULL, C_NULL, C_NULL)
     end
     Dataset(dataset)
 end
@@ -233,7 +246,7 @@ function update(filename::AbstractString, shared::Bool = false)
     if shared
         dataset = GDAL.openshared(filename, GDAL.GA_Update)
     else
-        dataset = GDAL.open(filename, GDAL.GA_Update)
+        dataset = GDAL.openex(filename, GDAL.GA_Update, C_NULL, C_NULL, C_NULL)
     end
     Dataset(dataset)
 end
@@ -252,7 +265,7 @@ function write(filename::AbstractString,
                strict::Bool = false,
                options::Vector{ASCIIString} = Vector{ASCIIString}())
     checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(driver(dataset), filename, dataset, strict, options))
+    close(createcopy(filename, dataset, driver(dataset), options, strict))
 end
 
 function write(dataset::Dataset,
@@ -261,7 +274,7 @@ function write(dataset::Dataset,
                strict::Bool = false,
                options::Vector{ASCIIString} = Vector{ASCIIString}())
     checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(driver, filename, dataset, strict, options))
+    close(createcopy(filename, dataset, driver, options, strict))
 end
 
 function write(dataset::Dataset,
@@ -270,7 +283,7 @@ function write(dataset::Dataset,
                strict::Bool = false,
                options::Vector{ASCIIString} = Vector{ASCIIString}())
     checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(driver(name), filename, dataset, strict, options))
+    close(createcopy(driver(name), filename, dataset, options, strict))
 end
 
 function write(f::Function, args...)
@@ -291,12 +304,11 @@ height(dataset::Dataset) = GDAL.getrasterysize(dataset.ptr)
 "Fetch the number of raster bands on this dataset."
 nband(dataset::Dataset) = GDAL.getrastercount(dataset.ptr)
 
+"Fetch the number of feature layers on this dataset."
+nlayer(dataset::Dataset) = GDAL.datasetgetlayercount(dataset.ptr)
+
 "Fetch the driver that the dataset was created with"
 driver(dataset::Dataset) = Driver(GDAL.getdatasetdriver(dataset.ptr))
-
-"Fetch a band object for a dataset from its index"
-fetchband(dataset::Dataset, i::Integer) =
-    RasterBand(GDAL.getrasterband(dataset.ptr, i))
 
 """
 Add a band to a dataset.

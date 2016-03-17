@@ -43,6 +43,11 @@ height(rasterband::RasterBand) = GDAL.getrasterbandysize(rasterband.ptr)
 "Find out if we have update permission for this band."
 accessflag(rasterband::RasterBand) = GDAL.getrasteraccess(rasterband.ptr)
 
+
+"Fetch a band object for a dataset from its index"
+fetchband(dataset::Dataset, i::Integer) =
+    RasterBand(GDAL.getrasterband(dataset.ptr, i))
+
 """Fetch the band number (1+) within its dataset, or 0 if unknown.
 
 This method may return a value of 0 to indicate overviews, or free-standing

@@ -61,7 +61,7 @@ end
 
 "Fetch list of (non-empty) metadata domains. (Since: GDAL 1.11)"
 metadatadomainlist{T <: GDAL.GDALMajorObjectH}(obj::Ptr{T}) =
-    loadstringlist(GDAL.getmetadatadomainlist(obj))
+    loadstringlist(GDAL.C.GDALGetMetadataDomainList(obj))
 
 """
 Fetch metadata. Use `""` or `NULL` for the default domain.
@@ -71,4 +71,4 @@ It is formated as a "Name=value" list with the last pointer value being `NULL`.
 Note that relatively few formats return any metadata at this time.
 """
 getmetadata{T <: GDAL.GDALMajorObjectH}(obj::Ptr{T}, domain::AbstractString = "") =
-    loadstringlist(GDAL.getmetadata(obj, pointer(domain)))
+    loadstringlist(GDAL.C.GDALGetMetadata(obj, pointer(domain)))
