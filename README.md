@@ -1,4 +1,7 @@
 # GDALUtils
+Toying with experimental syntax for https://github.com/visr/GDAL.jl.
+
+Use at your own risk!
 
 ```julia
 julia> import GDALUtils; const GU = GDALUtils
