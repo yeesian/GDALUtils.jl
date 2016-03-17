@@ -1,14 +1,4 @@
 
-type Dataset
-    ptr::Ptr{GDAL.GDALDatasetH}
-
-    function Dataset(ptr::Ptr{GDAL.GDALDatasetH})
-        dataset = new(ptr) # number of bands
-        finalizer(dataset, nullify)
-        dataset
-    end
-end
-
 """
 Close GDAL dataset.
 
@@ -20,7 +10,7 @@ dereferenced, and closed only if the referenced count has dropped below 1.
 """
 function close(dataset::Dataset)
     GDAL.close(dataset.ptr)
-    dataset.ptr = C_NULL
+    nullify(dataset)
 end
 
 """
@@ -51,9 +41,9 @@ rename(dataset::Dataset,
     GDAL.renamedataset(dataset.ptr, newname, oldname)
 
 "Copy the files associated with a dataset."
-copy(dataset::Dataset,
-     newname::AbstractString,
-     oldname::AbstractString) =
+copyfiles(dataset::Dataset,
+          newname::AbstractString,
+          oldname::AbstractString) =
     GDAL.copydatasetfiles(dataset.ptr, newname, oldname)
 
 """
@@ -74,9 +64,9 @@ force pixel interleaved operation and "COMPRESSED=YES" to force alignment on
 target dataset block sizes to achieve best compression. More options may be
 supported in the future.
 """
-copy{T <: AbstractString}(source::Dataset,
-                          dest::Dataset,
-                          options::Vector{T}) =
+copyraster{T <: AbstractString}(source::Dataset,
+                                dest::Dataset,
+                                options) =
     GDAL.datasetcopywholeraster(source.ptr, dest.ptr,
                                 Ptr{Ptr{UInt8}}(pointer(options)),
                                 C_NULL, C_NULL)
@@ -128,7 +118,7 @@ function createcopy(filename::AbstractString,
                     driver::Driver,
                     strict::Bool = false)
     Dataset(GDAL.createcopy(driver.ptr, filename, dataset.ptr, strict,
-                            C_NULL, Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL))
+                            C_NULL, C_NULL, C_NULL))
 end
 
 function createcopy{T <: AbstractString}(
@@ -138,8 +128,7 @@ function createcopy{T <: AbstractString}(
                     options::Vector{T},
                     strict::Bool = false)
     Dataset(GDAL.createcopy(driver.ptr, filename, dataset.ptr, strict,
-                            Ptr{Ptr{UInt8}}(pointer(options)),
-                            Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL))
+                            Ptr{Ptr{UInt8}}(pointer(options)), C_NULL, C_NULL))
 end
 
 function createcopy(f::Function, args...)
@@ -302,7 +291,7 @@ width(dataset::Dataset) = GDAL.getrasterxsize(dataset.ptr)
 height(dataset::Dataset) = GDAL.getrasterysize(dataset.ptr)
 
 "Fetch the number of raster bands on this dataset."
-nband(dataset::Dataset) = GDAL.getrastercount(dataset.ptr)
+nraster(dataset::Dataset) = GDAL.getrastercount(dataset.ptr)
 
 "Fetch the number of feature layers on this dataset."
 nlayer(dataset::Dataset) = GDAL.datasetgetlayercount(dataset.ptr)
@@ -406,28 +395,6 @@ projWKT(dataset::Dataset) = GDAL.getprojectionref(dataset.ptr)
 function setprojection!(dataset::Dataset, projstring::AbstractString)
     result = GDAL.setprojection(dataset.ptr, projstring)
     (result == GDAL.CE_Failure) && error("Could not set projection")
-end
-
-function Base.show(io::IO, dataset::Dataset)
-    if checknull(dataset)
-        print(io, "Closed Dataset")
-    else
-        nband_ = nband(dataset)
-        println(io, "GDAL Dataset ($(driver(dataset)))")
-        print(io, "\nFile(s): ")
-        for (i,filename) in enumerate(filelist(dataset))
-            print(io, "$filename ")
-            if i % 4 == 0 println() end
-        end
-        print(io, "\nDataset (width x height): ")
-        println(io, "$(width(dataset)) x $(height(dataset)) (pixels)")
-        for i in 1:min(nband_, 3)
-            print(io, "  ")
-            summarize(io, fetchband(dataset, i))
-        end
-        nband_ > 3 && println(io, "  ...")
-        print(io, "Number of bands: $(nband_)")
-    end
 end
 
 # "Fetch a format specific internally meaningful handle."

@@ -1,0 +1,150 @@
+# dataset.jl
+
+get___count() = n___()
+    - getgcpcount, ngcp
+    - datasetgetlayercount, nlayer
+    - getrastercount, nraster
+    - getdrivercount, ndriver
+    - getpointcount, npoint 
+    - getgeometrycount, ngeometry
+    - getfieldcount(feature), nfield 
+    - getgeomfieldcount, ngeomfield
+    - getfeaturecount, nfeature
+    - getfieldcount, nfield(featuredefn)
+    - getoverviewcount, noverview
+
+__xsize(), __ysize() = width(), height()
+    - getrasterxsize, getrasterysize
+    - getrasterbandxsize, getrasterbandysize
+
+remove typenames (rely on multi-dispatch instead)
+    - deletedataset -> delete
+    - renamedataset -> rename
+    - copydatasetfiles -> copyfiles
+    - getrasterunittype -> getunits
+    - setrasterunittype -> setunits
+    - getrasteroffset -> getoffset
+    - setrasteroffset -> setoffset 
+    - getrasterscale -> getscale
+    - setrasterscale -> setscale
+    - getrasterdatatype -> pixeltype*
+    - getrasteraccess -> accessflag*
+    - getrasterband -> fetchband*
+    - getbandnumber -> bandindex*
+    - getbanddataset -> datasetof*
+    - getrasternodatavalue -> nullvalue
+    - setrasternodatavalue -> setnullvalue
+    - getrastersampleoverview -> sampleoverview
+    - getrastercolorinterpretation -> getcolorinterp*
+    - setrastercolorinterpretation -> setcolorinterp*
+    - getrastercolortable -> getcolortable
+    - setrastercolortable -> setcolortable/clearcolortable
+    - rasterbandcopywholeraster -> copyband*
+    - getdatasetdriver -> driver*
+    - destroydriver -> destroy
+    - registerdriver -> register
+    - identifydriver(str) -> identify(str)
+    - deregisterdriver -> deregister 
+    - getdrivercreationoptionlist -> options
+    - getdrivershortname -> shortname
+    - getdriverlongname -> longname
+    - datasetrasterio -> rasterio
+    - destroygeometry -> destroy
+    - creategeometry -> creategeometry
+    - datasetgetlayer/datasetgetlayerbyname -> fetchlayer
+    - datasetdeletelayer -> deletelayer 
+    - datasetcreatelayer -> createlayer
+    - datasetcopylayer -> copylayer
+    - datasetexecutesql -> sqlquery
+    - datasetreleaseresultset -> releaseresult
+    - creategeomfield -> createfield
+    - addgeomfielddefn(featuredefn, geomfielddefn) -> add(...)
+    - deletegeomfielddefn(featuredefn, i) -> delete
+
+
+getprojectionref -> projWKT
+
+
+datasetcopywholeraster -> copyraster
+openshared/openex -> read/update
+close(createcopy()) -> write
+
+# rasterband.jl
+
+
+# metadata.jl
+
+
+getcolorinterpretationname -> nameof
+getcolorinterpretationbyname -> colorinterp
+GDALGetMetadataDomainList -> metadatadomainlist
+GDALGetMetadata -> 
+
+# driver.jl
+getdriver(i) -> driver
+getdriverbyname(str) -> driver
+
+validatecreationoptions(drv, options) -> validate
+
+# rasterio
+
+[new] fetch/update
+
+# ogr/geometry
+createfromwkb -> fromWKB
+createfromwkt -> fromWKT
+getcoordinatedimension -> getcoorddim
+setcoordinatedimension -> setcoorddim
+importfromwkb -> importWKB
+exporttowkb -> exportWKB
+exporttoisowkb -> exportISOWKB
+getgeometrytype -> geomtype 
+getgeometryname -> geomname 
+createfromgml -> fromGML 
+exporttogml -> exportGML
+exporttokml -> exportKML 
+exporttojson -> exportJSON 
+creategeometryfromjson -> fromJSON
+assignspatialreference -> assignspatialref 
+getspatialreference -> getspatialref 
+simplifypreservetopology
+delaunaytriangulation
+value -> pointalongline
+setpointcount -> setpointcount
+getgeometryref -> fetchgeom
+addgeometry -> addgeom 
+addgeometrydirectly -> addgeomdirectly 
+removegeometry -> removegeom /removeallgeoms
+hascurvegeometry -> hascurvegeom 
+getlineargeometry -> lineargeom
+buildpolygonfromedges -> polygonfromedges
+
+# ogr/featurelayer.jl
+getname(layer) -> nameof(layer)
+getgeomtype(layer) -> geomtype 
+setspatialfilterex -> setspatialfilter/clearspatialfilter
+getnextfeature -> fetchnext
+setnextbyindex -> setnextindex
+getfeature(layer, i) -> fetchfeature
+setfeature -> setfeature
+getgeometryref -> getgeometry
+getfielddefnref(feature, i) -> fielddefn
+getfieldindex(feature, name) -> fieldindex
+isfieldset -> fieldiset
+unsetfield -> unsetfield
+getfieldasinteger -> asint ...
+setfieldinteger -> setfield
+getgeomfielddefnref -> geomfielddefn
+getgeomfieldindex -> geomfieldindex 
+getgeomfieldref -> geomfield 
+setgeomfielddirectly ...
+getnativemediatype -> getmediatype
+setnativemediatype -> setmediatype
+fillunsetwithdefault -> fillunset 
+getlayerdefn -> layerdefn
+findfieldindex -> indexof
+getgeometrycolumn -> geomcolumn 
+setignoredfields -> ignorefields
+getdefnref -> featuredefn
+getnameref(fieldefn) -> getname
+getnameref(geomfielddefn) -> getname 

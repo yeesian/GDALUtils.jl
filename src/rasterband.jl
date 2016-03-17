@@ -1,14 +1,4 @@
 
-type RasterBand
-    ptr::Ptr{GDAL.GDALRasterBandH}
-
-    function RasterBand(ptr::Ptr{GDAL.GDALRasterBandH})
-        rasterband = new(ptr) # number of bands
-        finalizer(rasterband, nullify)
-        rasterband
-    end
-end
-
 """
 Fetch the "natural" block size of this band.
 
@@ -491,37 +481,3 @@ clearcolortable(rasterband::RasterBand) =
 # """
 # _createmaskband(band::GDALRasterBandH,nFlags::Integer) =
 #     GDALCreateMaskBand(band, nFlags)::CPLErr
-
-function summarize(io::IO, rasterband::RasterBand)
-    if checknull(rasterband)
-        println(io, "Null RasterBand")
-    else
-        access = _access[accessflag(rasterband)]
-        color = nameof(getcolorinterp(rasterband))
-        xsize = width(rasterband)
-        ysize = height(rasterband)
-        i = bandindex(rasterband)
-        pxtype = pixeltype(rasterband)
-        println(io, "[$access] Band $i ($color): $xsize x $ysize ($pxtype)")
-    end
-end
-
-function Base.show(io::IO, rasterband::RasterBand)
-    summarize(io, rasterband)
-    (x,y) = getblocksize(rasterband)
-    sc = getscale(rasterband)
-    ofs = getoffset(rasterband)
-    norvw = noverview(rasterband)
-    ut = getunits(rasterband)
-    nv = nullvalue(rasterband)
-    println(io, "    blocksize: $(x)x$(y), nodata: $nv, units: $(sc)px + $(ofs)$ut")
-    print(io, "    overviews: ")
-    for i in 1:norvw
-        ovr_band = overview(rasterband, i)
-        print(io, "$(width(ovr_band))x$(height(ovr_band)), ")
-        if i % 5 == 0
-            println(io, "")
-            print(io, "               ")
-        end
-    end
-end

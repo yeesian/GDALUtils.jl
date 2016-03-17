@@ -726,7 +726,7 @@ Fetch the geometry field index given geometry field name.
 ### Returns
 the geometry field index, or -1 if no matching geometry field is found.
 """
-geomfielddefn(feature::Feature, name::AbstractString) =
+geomfieldindex(feature::Feature, name::AbstractString) =
     GDAL.getgeomfieldindex(feature.ptr, i)
 
 """

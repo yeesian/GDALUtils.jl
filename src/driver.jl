@@ -1,6 +1,3 @@
-type Driver{T}
-    ptr::Ptr{T}
-end
 
 "Fetch driver by index"
 driver(i::Integer) = Driver(GDAL.getdriver(i-1))
@@ -83,12 +80,4 @@ element is a `NULL` pointer
 function validate{T <: AbstractString}(drv::Driver, options::Vector{T})
     Bool(GDAL.validatecreationoptions(drv.ptr,
                                       Ptr{Ptr{UInt8}}(pointer(options))))
-end
-
-function Base.show(io::IO, drv::Driver)
-    if checknull(drv)
-        print(io, "Null Driver")
-    else
-        print(io, "Driver: $(shortname(drv))/$(longname(drv))")
-    end
 end
