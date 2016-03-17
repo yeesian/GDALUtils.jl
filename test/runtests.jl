@@ -49,7 +49,7 @@ end
 
 GU.read("pyrasterio/RGB.byte.tif") do src
     rgb = GU.fetch(src, Cint[1,2,3], 350:410, 350:450)
-    GU.create("pyrasterio/example3.tif", 500, 300, 3, eltype(rgb), "GTiff") do dst
+    GU.create("pyrasterio/example3.tif", "GTiff", 500, 300, 3, eltype(rgb)) do dst
         GU.update!(dst, rgb, Cint[1,2,3], 1:240, 1:400)
     end
 end

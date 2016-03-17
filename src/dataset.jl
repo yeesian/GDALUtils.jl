@@ -128,7 +128,7 @@ function createcopy(filename::AbstractString,
                     driver::Driver,
                     strict::Bool = false)
     Dataset(GDAL.createcopy(driver.ptr, filename, dataset.ptr, strict,
-                            C_NULL, C_NULL, C_NULL))
+                            C_NULL, Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL))
 end
 
 function createcopy{T <: AbstractString}(
@@ -139,7 +139,7 @@ function createcopy{T <: AbstractString}(
                     strict::Bool = false)
     Dataset(GDAL.createcopy(driver.ptr, filename, dataset.ptr, strict,
                             Ptr{Ptr{UInt8}}(pointer(options)),
-                            C_NULL, C_NULL))
+                            Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL))
 end
 
 function createcopy(f::Function, args...)
@@ -283,7 +283,7 @@ function write(dataset::Dataset,
                strict::Bool = false,
                options::Vector{ASCIIString} = Vector{ASCIIString}())
     checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(driver(name), filename, dataset, options, strict))
+    close(createcopy(filename, dataset, driver(name), options, strict))
 end
 
 function write(f::Function, args...)
