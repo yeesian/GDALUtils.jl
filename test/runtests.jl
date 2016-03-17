@@ -1,4 +1,4 @@
-using FactCheck
+using FactCheck, Base.Test
 import GDALUtils; const GU = GDALUtils
 
 GU.read("pyrasterio/RGB.byte.tif") do raster
@@ -22,11 +22,12 @@ GU.read("pyrasterio/RGB.byte.tif") do raster
 end
 
 GU.create("pyrasterio/example.tif",
+                   "GTiff", # drivername
                    500, # width
                    300, # height
                    1, # number of bands
                    UInt8, # DataType
-                   "GTiff") do raster
+          ) do raster
     image = fill(UInt8(127), (150, 250))
     GU.update!( raster,
                 image, # image to "burn" into the raster
@@ -36,7 +37,7 @@ GU.create("pyrasterio/example.tif",
 end
 
 GU.read("pyrasterio/RGB.byte.tif") do src
-GU.create("pyrasterio/example2.tif", 500, 300, 3, UInt8, "GTiff") do dst
+GU.create("pyrasterio/example2.tif", "GTiff", 500, 300, 3, UInt8) do dst
     rgb = GU.fetch(src, Cint[1,2,3]) # fetch bands 1 - 3
     # You can update all 3 bands simultaneously
     GU.update!(dst, rgb, # image to "burn" into destination dataset
@@ -52,3 +53,6 @@ GU.read("pyrasterio/RGB.byte.tif") do src
         GU.update!(dst, rgb, Cint[1,2,3], 1:240, 1:400)
     end
 end
+
+include("tutorial_raster.jl")
+include("tutorial_vector.jl")
