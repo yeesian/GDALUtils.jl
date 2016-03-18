@@ -64,7 +64,7 @@ force pixel interleaved operation and "COMPRESSED=YES" to force alignment on
 target dataset block sizes to achieve best compression. More options may be
 supported in the future.
 """
-copyraster(source::Dataset, dest::Dataset, options) =
+copywholeraster(source::Dataset, dest::Dataset, options) =
     GDAL.datasetcopywholeraster(source.ptr, dest.ptr,
                                 Ptr{Ptr{UInt8}}(pointer(options)),
                                 Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL)
@@ -253,7 +253,7 @@ function write(filename::AbstractString,
                strict::Bool = false,
                options::Vector{ASCIIString} = Vector{ASCIIString}())
     checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(filename, dataset, driver(dataset), options, strict))
+    close(createcopy(filename, dataset, getdriver(dataset), options, strict))
 end
 
 function write(dataset::Dataset,
@@ -271,7 +271,7 @@ function write(dataset::Dataset,
                strict::Bool = false,
                options::Vector{ASCIIString} = Vector{ASCIIString}())
     checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(filename, dataset, driver(name), options, strict))
+    close(createcopy(filename, dataset, getdriver(name), options, strict))
 end
 
 function write(f::Function, args...)
@@ -296,7 +296,7 @@ nraster(dataset::Dataset) = GDAL.getrastercount(dataset.ptr)
 nlayer(dataset::Dataset) = GDAL.datasetgetlayercount(dataset.ptr)
 
 "Fetch the driver that the dataset was created with"
-driver(dataset::Dataset) = Driver(GDAL.getdatasetdriver(dataset.ptr))
+getdriver(dataset::Dataset) = Driver(GDAL.getdatasetdriver(dataset.ptr))
 
 """
 Add a band to a dataset.
@@ -388,10 +388,10 @@ returned.
 
 See also: http://www.gdal.org/ogr/osr_tutorial.html
 """
-projWKT(dataset::Dataset) = GDAL.getprojectionref(dataset.ptr)
+getproj(dataset::Dataset) = GDAL.getprojectionref(dataset.ptr)
 
 "Set the projection reference string for this dataset."
-function setprojection!(dataset::Dataset, projstring::AbstractString)
+function setproj(dataset::Dataset, projstring::AbstractString)
     result = GDAL.setprojection(dataset.ptr, projstring)
     (result == GDAL.CE_Failure) && error("Could not set projection")
 end

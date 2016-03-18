@@ -8,8 +8,8 @@ module GDALUtils
     include("gcp.jl")
     include("spatialref.jl")
     include("dataset.jl") # depends: types.jl, driver.jl
-    include("rasterband.jl") # depends: dataset.jl
-    include("rasterio.jl")
+    include("raster/rasterband.jl") # depends: dataset.jl
+    include("raster/rasterio.jl")
     include("ogr/geometry.jl")
     include("ogr/featurelayer.jl")
     include("ogr/featuredefn.jl")

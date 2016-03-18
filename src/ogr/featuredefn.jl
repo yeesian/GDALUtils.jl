@@ -1,5 +1,5 @@
 "Create a new feature definition object to hold the field definitions."
-fd_create(name::AbstractString) = FeatureDefn(GDAL.fd_create(name))
+createfeaturedefn(name::AbstractString) = FeatureDefn(GDAL.fd_create(name))
 
 "Destroy a feature definition object and release all memory associated with it"
 destroy(featuredefn::FeatureDefn) = GDAL.destroy(featuredefn.ptr)
@@ -14,7 +14,7 @@ getname(featuredefn::FeatureDefn) = GDAL.getname(featuredefn.ptr)
 nfield(featuredefn::FeatureDefn) = GDAL.getfieldcount(featuredefn.ptr)
 
 "Fetch field definition of the passed feature definition."
-getfielddefn(featuredefn::FeatureDefn, i::Integer) =
+fetchfielddefn(featuredefn::FeatureDefn, i::Integer) =
     FieldDefn(GDAL.getfielddefn(featuredefn.ptr, i))
 
 """
@@ -27,7 +27,7 @@ getfieldindex(featuredefn::FeatureDefn, name::AbstractString) =
     GDAL.getfieldindex(featuredefn.ptr, name)
 
 "Add a new field definition to the passed feature definition."
-addfielddefn(featuredefn::FeatureDefn, fielddefn::FieldDefn) =
+adddefn(featuredefn::FeatureDefn, fielddefn::FieldDefn) =
     GDAL.addfielddefn(featuredefn.ptr, fielddefn.ptr)
 
 "Delete an existing field definition."
@@ -64,11 +64,11 @@ setgeomtype(featuredefn::FeatureDefn, etype::GDAL.OGRwkbGeometryType) =
     GDAL.setgeomtype(featuredefn.ptr, etype)
 
 "Determine whether the geometry can be omitted when fetching features."
-isgeometryignored(featuredefn::FeatureDefn) =
+isgeomignored(featuredefn::FeatureDefn) =
     GDAL.isgeometryignored(featuredefn.ptr)
 
 "Set whether the geometry can be omitted when fetching features."
-setgeometryignored(featuredefn::FeatureDefn, ignore::Bool) =
+setgeomignored(featuredefn::FeatureDefn, ignore::Bool) =
     GDAL.setgeometryignored(featuredefn.ptr, ignore)
 
 "Determine whether the style can be omitted when fetching features."
@@ -79,7 +79,7 @@ isstyleignored(featuredefn::FeatureDefn) =
 ngeomfield(featuredefn::FeatureDefn) = GDAL.getgeomfieldcount(featuredefn.ptr)
 
 "Fetch geometry field definition of the passed feature definition."
-geomfielddefn(featuredefn::FeatureDefn, i::Integer) =
+fetchgeomfielddefn(featuredefn::FeatureDefn, i::Integer) =
     GeomFieldDefn(GDAL.getgeomfielddefn(featuredefn.ptr, i))
 
 """
@@ -88,15 +88,15 @@ Find geometry field by name.
 ### Returns
 the geometry field index, or -1 if no match found.
 """
-geomfieldindex(featuredefn::FeatureDefn, name::AbstractString) = GDAL.getgeomfieldindex(featuredefn.ptr, name)
+getgeomfieldindex(featuredefn::FeatureDefn, name::AbstractString) =
+    GDAL.getgeomfieldindex(featuredefn.ptr, name)
 
 "Add a new field definition to the passed feature definition."
 add(featuredefn::FeatureDefn, geomfielddefn::GeomFieldDefn) =
     GDAL.addgeomfielddefn(featuredefn.ptr, geomfielddefn.ptr)
 
-
 "Delete an existing geometry field definition."
-function delete(featuredefn::FeatureDefn, i::Integer)
+function deletegeomfielddefn(featuredefn::FeatureDefn, i::Integer)
     result = GDAL.deletegeomfielddefn(featuredefn.ptr, i)
     if result != GDAL.OGRERR_NONE
         error("Failed to delete geometry field $i in the feature definition")
@@ -111,7 +111,7 @@ issame(featuredefn1::FeatureDefn, featuredefn2::FeatureDefn) =
 
 Starting with GDAL 2.1, returns NULL in case out of memory situation.
 """
-function f_create(featuredefn::FeatureDefn)
+function createfeature(featuredefn::FeatureDefn)
     result = GDAL.f_create(featuredefn.ptr)
     (result == C_NULL) && error("out of memory when creating feature")
     Feature(result)
@@ -121,4 +121,4 @@ end
 destroy(feature::Feature) = GDAL.destroy(feature.ptr)
 
 "Fetch feature definition."
-featuredefn(feature::Feature) = FeatureDefn(GDAL.getdefnref(feature.ptr))
+getfeaturedefn(feature::Feature) = FeatureDefn(GDAL.getdefnref(feature.ptr))

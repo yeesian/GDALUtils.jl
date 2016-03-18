@@ -268,20 +268,20 @@ end
 function fetch(dataset::Dataset, i::Integer)
     checknull(dataset) && error("Can't read closed dataset")
     band = fetchband(dataset, i)
-    buffer = Array(pixeltype(band), width(band), height(band))
+    buffer = Array(getdatatype(band), width(band), height(band))
     rasterio!(band, buffer)
 end
 
 function fetch(dataset::Dataset, indices::Vector{Cint})
     checknull(dataset) && error("Can't read closed dataset")
-    buffer = Array(pixeltype(fetchband(dataset, indices[1])),
+    buffer = Array(getdatatype(fetchband(dataset, indices[1])),
                    width(dataset), height(dataset), length(indices))
     rasterio!(dataset, buffer, indices)
 end
 
 function fetch(dataset::Dataset)
     checknull(dataset) && error("Can't read closed dataset")
-    buffer = Array(pixeltype(fetchband(dataset, 1)),
+    buffer = Array(getdatatype(fetchband(dataset, 1)),
                    width(dataset), height(dataset), nband(dataset))
     fetch!(dataset, buffer)
 end
@@ -294,7 +294,7 @@ function fetch(dataset::Dataset,
                yoffset::Integer)
     checknull(dataset) && error("Can't read closed dataset")
     band = fetchband(dataset, i)
-    buffer = Array(pixeltype(band), width(band), height(band))
+    buffer = Array(getdatatype(band), width(band), height(band))
     rasterio!(band, buffer, width, height, xoffset, yoffset)
 end
 
@@ -305,7 +305,7 @@ function fetch{T <: Integer}(dataset::Dataset,
                              xoffset::Integer,
                              yoffset::Integer)
     checknull(dataset) && error("Can't read closed dataset")
-    buffer = Array(pixeltype(fetchband(dataset, indices[1])),
+    buffer = Array(getdatatype(fetchband(dataset, indices[1])),
                    width(dataset), height(dataset), length(indices))
     rasterio!(dataset, buffer, indices, width, height, xoffset, yoffset)
 end
@@ -316,7 +316,7 @@ function fetch{U <: Integer}(dataset::Dataset,
                              cols::UnitRange{U})
     checknull(dataset) && error("Can't read closed dataset")
     band = fetchband(dataset, i)
-    buffer = Array(pixeltype(band), width(band), height(band))
+    buffer = Array(getdatatype(band), width(band), height(band))
     rasterio!(band, buffer, rows, cols)
 end
 
@@ -325,7 +325,7 @@ function fetch{U <: Integer}(dataset::Dataset,
                              rows::UnitRange{U},
                              cols::UnitRange{U})
     checknull(dataset) && error("Can't read closed dataset")
-    buffer = Array(pixeltype(fetchband(dataset, indices[1])),
+    buffer = Array(getdatatype(fetchband(dataset, indices[1])),
                    width(dataset), height(dataset), length(indices))
     rasterio!(dataset, buffer, indices, rows, cols)
 end

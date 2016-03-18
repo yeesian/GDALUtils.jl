@@ -21,7 +21,7 @@ function getblocksize(rasterband::RasterBand)
 end
 
 "Fetch the pixel data type for this band."
-pixeltype(rasterband::RasterBand) =
+getdatatype(rasterband::RasterBand) =
     _jltype(GDAL.getrasterdatatype(rasterband.ptr))
 
 "Fetch the width in pixels of this band."
@@ -31,7 +31,7 @@ width(rasterband::RasterBand) = GDAL.getrasterbandxsize(rasterband.ptr)
 height(rasterband::RasterBand) = GDAL.getrasterbandysize(rasterband.ptr)
 
 "Find out if we have update permission for this band."
-accessflag(rasterband::RasterBand) = GDAL.getrasteraccess(rasterband.ptr)
+getaccess(rasterband::RasterBand) = GDAL.getrasteraccess(rasterband.ptr)
 
 
 "Fetch a band object for a dataset from its index"
@@ -43,7 +43,7 @@ fetchband(dataset::Dataset, i::Integer) =
 This method may return a value of 0 to indicate overviews, or free-standing
 `GDALRasterBand` objects without a relationship to a dataset.
 """
-bandindex(rasterband::RasterBand) = GDAL.getbandnumber(rasterband.ptr)
+getindex(rasterband::RasterBand) = GDAL.getbandnumber(rasterband.ptr)
 
 """
 Fetch the handle to its dataset handle, or `NULL` if this cannot be determined.
@@ -51,7 +51,7 @@ Fetch the handle to its dataset handle, or `NULL` if this cannot be determined.
 Note that some `GDALRasterBands` are not considered to be a part of a dataset,
 such as overviews or other "freestanding" bands.
 """
-datasetof(rasterband::RasterBand) =
+getdataset(rasterband::RasterBand) =
     Dataset(GDAL.getbanddataset(rasterband.ptr))
 
 """
@@ -60,10 +60,10 @@ Return raster unit type.
 Return a name for the units of this raster's values. For instance, it might be
 "m" for an elevation model in meters, or "ft" for feet.
 """
-getunits(rasterband::RasterBand) = GDAL.getrasterunittype(rasterband.ptr)
+getunittype(rasterband::RasterBand) = GDAL.getrasterunittype(rasterband.ptr)
 
 "Set unit type."
-setunits(rasterband::RasterBand, unitstring::AbstractString) =
+setunittype(rasterband::RasterBand, unitstring::AbstractString) =
     GDAL.setrasterunittype(rasterband.ptr, unitstring)
 
 """
@@ -77,7 +77,8 @@ elevations in `GUInt16` bands with a precision of 0.1, starting from -100.
 
 For file formats that don't know this intrinsically, a value of 0 is returned.
 """
-getoffset(rasterband::RasterBand) = GDAL.getrasteroffset(rasterband.ptr, C_NULL)
+getoffset(rasterband::RasterBand) =
+    GDAL.getrasteroffset(rasterband.ptr, C_NULL)
 
 "Set scaling offset."
 setoffset(rasterband::RasterBand, offset::Cdouble) =
@@ -116,11 +117,11 @@ associated with this layer. May be `NULL` (default).
 ### Returns
 the nodata value for this band.
 """
-nullvalue(rasterband::RasterBand) =
+getnodatavalue(rasterband::RasterBand) =
     GDAL.getrasternodatavalue(rasterband.ptr, C_NULL)
 
 "Set the no data value for this band."
-function setnullvalue(rasterband::RasterBand, value::Cdouble)
+function setnodatavalue(rasterband::RasterBand, value::Cdouble)
     result = GDAL.setrasternodatavalue(rasterband.ptr, value)
     (result == GDAL.CE_Failure) && error("Could not set nodatavalue")
 end
@@ -149,10 +150,10 @@ More options may be supported in the future.
 ### Returns
 `CE_None` on success, or `CE_Failure` on failure.
 """
-copyband(source::RasterBand, dest::RasterBand, options) =
+copywholeraster(source::RasterBand, dest::RasterBand, options) =
     GDAL.rasterbandcopywholeraster(source.ptr, dest.ptr, pointer(options))
 
-copyband(source::RasterBand, dest::RasterBand) =
+copywholeraster(source::RasterBand, dest::RasterBand) =
     GDAL.rasterbandcopywholeraster(source.ptr, dest.ptr, C_NULL,C_NULL,C_NULL)
 
 """
@@ -164,7 +165,7 @@ overview count, zero if none.
 noverview(rasterband::RasterBand) = GDAL.getoverviewcount(rasterband.ptr)
 
 "Fetch overview raster band object."
-overview(rasterband::RasterBand, i::Integer) =
+fetchoverview(rasterband::RasterBand, i::Integer) =
     RasterBand(GDAL.getoverview(rasterband.ptr, i-1))
 
 """
@@ -176,7 +177,7 @@ number of desired samples to fetch the most reduced overview. The same band as w
 passed in will be returned if it has not overviews, or if none of the overviews
 have enough samples.
 """
-sampleoverview(rasterband::RasterBand, nsamples::Integer) =
+getsampleoverview(rasterband::RasterBand, nsamples::Integer) =
     RasterBand(GDAL.getrastersampleoverview(rasterband.ptr, nsamples))
 
 

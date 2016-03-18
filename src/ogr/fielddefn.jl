@@ -1,5 +1,5 @@
 "Create a new field definition."
-fld_create(name::AbstractString, etype::GDAL.OGRFieldType) =
+createfielddefn(name::AbstractString, etype::GDAL.OGRFieldType) =
     FieldDefn(GDAL.fld_create(name, etype))
 
 "Destroy a field definition."
@@ -117,7 +117,7 @@ isdefaultdriverspecific(fielddefn::FieldDefn) =
     Bool(GDAL.isdefaultdriverspecific(fielddefn.ptr))
 
 "Create a new field geometry definition."
-gfld_create(name::AbstractString, etype::GDAL.OGRwkbGeometryType) =
+creategeomfield(name::AbstractString, etype::GDAL.OGRwkbGeometryType) =
     GeomFieldDefn(GDAL.gfld_create(name, etype))
 
 "Destroy a geometry field definition."

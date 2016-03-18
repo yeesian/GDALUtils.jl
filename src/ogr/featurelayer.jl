@@ -1,9 +1,9 @@
 
 "Return the layer name."
-nameof(layer::FeatureLayer) = GDAL.getname(layer.ptr)
+getname(layer::FeatureLayer) = GDAL.getname(layer.ptr)
 
 "Return the layer geometry type."
-geomtype(layer::FeatureLayer) = GDAL.getgeomtype(layer.ptr)
+getgeomtype(layer::FeatureLayer) = GDAL.getgeomtype(layer.ptr)
 
 "Returns the current spatial filter for this layer."
 getspatialfilter(layer::FeatureLayer) =
@@ -127,13 +127,13 @@ Execute an SQL statement against the data store.
 an OGRLayer containing the results of the query.
 Deallocate with ReleaseResultSet().
 """
-sqlquery(dataset::Dataset, query::AbstractString) =
+executesql(dataset::Dataset, query::AbstractString) =
     FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query, C_NULL, C_NULL))
 
-sqlquery(dataset::Dataset, query::AbstractString, dialect::AbstractString) =
+executesql(dataset::Dataset, query::AbstractString, dialect::AbstractString) =
     FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query, C_NULL, dialect))
 
-function sqlquery(dataset::Dataset,
+function executesql(dataset::Dataset,
                   query::AbstractString,
                   spatialfilter::Geometry,
                   dialect::AbstractString)
@@ -141,12 +141,12 @@ function sqlquery(dataset::Dataset,
                                         dialect))
 end
 
-function sqlquery(f::Function, dataset::Dataset, args...)
+function executesql(f::Function, dataset::Dataset, args...)
     result = sqlquery(dataset, args...)
     try
         f(result)
     finally
-        releaseresult(dataset, result)
+        releaseresultset(dataset, result)
     end
 end
 
@@ -157,15 +157,24 @@ Release results of ExecuteSQL().
 * **dataset**: the dataset handle.
 * **layer**: the result of a previous ExecuteSQL() call.
 """
-releaseresult(dataset::Dataset, layer::FeatureLayer) =
+releaseresultset(dataset::Dataset, layer::FeatureLayer) =
     GDAL.datasetreleaseresultset(dataset.ptr, layer.ptr)
 
 "Reset feature reading to start on the first feature."
 resetreading(layer::FeatureLayer) = GDAL.resetreading(layer.ptr)
 
 "Fetch the next available feature from this layer."
-fetchnext(layer::FeatureLayer) =
+fetchnextfeature(layer::FeatureLayer) =
     Feature(GDAL.getnextfeature(layer.ptr))
+
+function fetchnextfeature(f::Function, args...)
+    feature = fetchnextfeature(args...)
+    try
+        f(feature)
+    finally
+        destroy(feature)
+    end
+end
 
 "Move read cursor to the nIndex'th feature in the current resultset.
 ### Parameters
@@ -174,7 +183,7 @@ fetchnext(layer::FeatureLayer) =
 ### Returns
 OGRERR_NONE on success or an error code.
 """
-function setnextindex(layer::FeatureLayer, i::Integer)
+function setnextbyindex(layer::FeatureLayer, i::Integer)
     result = GDAL.setnextbyindex(layer.ptr, i)
     if result != GDAL.OGRERR_NONE
         error("Failed to move the cursor to index $i")
@@ -184,6 +193,15 @@ end
 "Fetch a feature (now owned by the caller) by its identifier."
 fetchfeature(layer::FeatureLayer, i::Integer) =
     Feature(GDAL.getfeature(layer.ptr, i))
+
+function fetchfeature(f::Function, args...)
+    feature = fetchfeature(args...)
+    try
+        f(feature)
+    finally
+        destroy(feature)
+    end
+end
 
 """
 Rewrite an existing feature.
@@ -212,6 +230,15 @@ function createfeature(layer::FeatureLayer, feature::Feature)
     end
 end
 
+function createfeature(f::Function, args...)
+    feature = createfeature(args...)
+    try
+        f(feature)
+    finally
+        destroy(feature)
+    end
+end
+
 """
 Delete feature with fid i from layer.
 
@@ -233,7 +260,7 @@ Set feature geometry.
 OGRERR_NONE if successful, or OGR_UNSUPPORTED_GEOMETRY_TYPE if the geometry
 type is illegal for the OGRFeatureDefn (checking not yet implemented).
 """
-function setgeometrydirectly(feature::Feature, geom::Geometry)
+function setgeomdirectly(feature::Feature, geom::Geometry)
     result = GDAL.setgeometrydirectly(feature.ptr, geom.ptr)
     if result != GDAL.OGRERR_NONE
         error("Failed to set feature geometry.")
@@ -250,7 +277,7 @@ Set feature geometry.
 OGRERR_NONE if successful, or OGR_UNSUPPORTED_GEOMETRY_TYPE if the geometry
 type is illegal for the OGRFeatureDefn (checking not yet implemented).
 """
-function setgeometry(feature::Feature, geom::Geometry)
+function setgeom(feature::Feature, geom::Geometry)
     result = GDAL.setgeometry(feature.ptr, geom.ptr)
     if result != GDAL.OGRERR_NONE
         error("Failed to set feature geometry.")
@@ -263,7 +290,7 @@ Fetch an handle to feature geometry.
 ### Returns
 an handle to internal feature geometry. This object should not be modified.
 """
-getgeometry(feature::Feature) = Geometry(GDAL.getgeometryref(feature.ptr))
+getgeom(feature::Feature) = Geometry(GDAL.getgeometryref(feature.ptr))
 
 "Take away ownership of geometry."
 stealgeometry(feature::Feature) = Geometry(GDAL.stealgeometry(feature.ptr))
@@ -293,7 +320,7 @@ Fetch definition for this field.
 an handle to the field definition (from the OGRFeatureDefn). This is an
 internal reference, and should not be deleted or modified.
 """
-fielddefn(feature::Feature, i::Integer) =
+fetchfielddefn(feature::Feature, i::Integer) =
     FieldDefn(GDAL.getfielddefnref(feature.ptr, i))
 
 """
@@ -306,7 +333,8 @@ Fetch the field index given field name.
 ### Returns
 the field index, or -1 if no matching field is found.
 """
-fieldindex(feature::Feature, name::AbstractString) = GDAL.getfieldindex(feature.ptr, name)
+getfieldindex(feature::Feature, name::AbstractString) =
+    GDAL.getfieldindex(feature.ptr, name)
 
 """Test if a field has ever been assigned a value or not.
 
@@ -314,7 +342,8 @@ fieldindex(feature::Feature, name::AbstractString) = GDAL.getfieldindex(feature.
 * **feature**: the feature that owned the field.
 * **i**: the field to fetch, from 0 to GetFieldCount()-1.
 """
-fieldisset(feature::Feature, i::Integer) = Bool(GDAL.isfieldset(feature.ptr, i))
+isfieldset(feature::Feature, i::Integer) =
+    Bool(GDAL.isfieldset(feature.ptr, i))
 
 """
 Clear a field, marking it as unset.
@@ -713,7 +742,7 @@ Fetch definition for this geometry field.
 The field definition (from the OGRFeatureDefn). This is an
 internal reference, and should not be deleted or modified.
 """
-geomfielddefn(feature::Feature, i::Integer) =
+fetchgeomfielddefn(feature::Feature, i::Integer) =
     GeomFieldDefn(GDAL.getgeomfielddefnref(feature.ptr, i))
 
 """
@@ -726,7 +755,7 @@ Fetch the geometry field index given geometry field name.
 ### Returns
 the geometry field index, or -1 if no matching geometry field is found.
 """
-geomfieldindex(feature::Feature, name::AbstractString) =
+getgeomfieldindex(feature::Feature, name::AbstractString) =
     GDAL.getgeomfieldindex(feature.ptr, i)
 
 """
@@ -739,7 +768,7 @@ Fetch the feature geometry.
 ### Returns
 an internal feature geometry. This object should not be modified.
 """
-geomfield(feature::Feature, i::Integer) =
+fetchgeomfield(feature::Feature, i::Integer) =
     Geometry(GDAL.getgeomfieldref(feature.ptr, i))
 
 """
@@ -943,7 +972,7 @@ validate(feature::Feature, flags::Integer, emiterror::Bool) =
     Bool(GDAL.validate(feature.ptr, flags, emiterror))
 
 "Fetch the schema information for this layer."
-layerdefn(layer::FeatureLayer) = FeatureDefn(GDAL.getlayerdefn(layer.ptr))
+getlayerdefn(layer::FeatureLayer) = FeatureDefn(GDAL.getlayerdefn(layer.ptr))
 
 """
 Find the index of field in a layer.
@@ -951,9 +980,8 @@ Find the index of field in a layer.
 ### Returns
 field index, or -1 if the field doesn't exist
 """
-function indexof(layer::FeatureLayer, field::AbstractString, exactmatch::Bool)
+findfieldindex(layer::FeatureLayer, field::AbstractString, exactmatch::Bool) =
     GDAL.findfieldindex(layer.ptr, field, exactmatch)
-end
 
 """
 Fetch the feature count in this layer.
@@ -1116,7 +1144,7 @@ end
 This method returns the name of the underlying database column being used as
 the geometry column, or "" if not supported.
 """
-geomcolumn(layer::FeatureLayer) = GDAL.getgeometrycolumn(layer.ptr)
+getgeomcolumn(layer::FeatureLayer) = GDAL.getgeometrycolumn(layer.ptr)
 
 """
 Set which fields can be omitted when retrieving features from the layer.

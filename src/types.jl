@@ -69,4 +69,4 @@ const _access = Dict{UInt32, Symbol}(0 => :ReadOnly, 1 => :Update)
 `TRUE` if the passed type is complex (one of `GDT_CInt16`, `GDT_CInt32`,
 `GDT_CFloat32` or `GDT_CFloat64`)
 """
-datatypeiscomplex(dtype::GDAL.GDALDataType) = Bool(GDAL.datatypeiscomplex(dtype))
+iscomplex(dtype::GDAL.GDALDataType) = Bool(GDAL.datatypeiscomplex(dtype))

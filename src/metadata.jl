@@ -7,10 +7,11 @@ but there are some variations. So `GCI_GrayIndex` returns "Gray" and
 `GCI_RedBand` returns "Red". The returned strings are static strings and should
 not be modified or freed by the application.
 """
-nameof(color::GDAL.GDALColorInterp) = GDAL.getcolorinterpretationname(color)
+getcolorinterpname(color::GDAL.GDALColorInterp) =
+    GDAL.getcolorinterpretationname(color)
 
 "Get color interpretation corresponding to the given symbolic name."
-colorinterp(name::AbstractString) = GDAL.getcolorinterpretationbyname(name)
+getcolorinterp(name::AbstractString) = GDAL.getcolorinterpretationbyname(name)
 
 "Load a `NULL`-terminated list of strings"
 function loadstringlist(pstringlist::Ptr{Cstring})
@@ -27,7 +28,7 @@ function loadstringlist(pstringlist::Ptr{Cstring})
 end
 
 "Fetch list of (non-empty) metadata domains. (Since: GDAL 1.11)"
-metadatadomainlist{T <: GDAL.GDALMajorObjectH}(obj::Ptr{T}) =
+getmetadatadomainlist{T <: GDAL.GDALMajorObjectH}(obj::Ptr{T}) =
     loadstringlist(GDAL.C.GDALGetMetadataDomainList(obj))
 
 """

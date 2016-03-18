@@ -88,13 +88,22 @@ end
 "Destroy geometry object."
 function destroy(geom::Geometry)
     GDAL.destroygeometry(geom.ptr)
-    geom.ptr = C_NULL
+    nullify(geom)
 end
 
 
 "Create an empty geometry of desired type."
-creategeometry(geomtype::GDAL.OGRwkbGeometryType) =
+creategeom(geomtype::GDAL.OGRwkbGeometryType) =
     Geometry(GDAL.creategeometry(geomtype))
+
+function creategeom(f::Function, args...)
+    geom = creategeom(args...)
+    try
+        f(geom)
+    finally
+        destroy(geom)
+    end
+end
 
 # """
 #     OGR_G_ApproximateArcAngles(double dfCenterX,
@@ -263,12 +272,13 @@ Assign geometry from well known binary data.
 OGRERR_NONE if all goes well, otherwise any of OGRERR_NOT_ENOUGH_DATA,
 OGRERR_UNSUPPORTED_GEOMETRY_TYPE, or OGRERR_CORRUPT_DATA may be returned.
 """
-function importWKB(geom::Geometry, data, nsize::Integer = 0)
-    result = GDAL.importfromwkb(geom.ptr, data, nsize)
+function fromWKB(data, nsize::Integer = 0)
+    geom_ptr = Ptr{GDAL.OGRGeometryH}()
+    result = GDAL.importfromwkb(geom_ptr, data, nsize)
     if result != OGRERR_NONE
         error("Failed to import geometry from WKB")
     end
-    Geometry(result)
+    Geometry(geom_ptr)
 end
 
 
@@ -283,7 +293,7 @@ Convert a geometry well known binary format.
 ### Returns
 Currently OGRERR_NONE is always returned.
 """
-function exportWKB(geom::Geometry, eorder::GDAL.OGRwkbByteOrder = GDAL.wkbNDR)
+function toWKB(geom::Geometry, eorder::GDAL.OGRwkbByteOrder = GDAL.wkbNDR)
     buffer = Array(Cuchar, wkbsize(geom))
     GDAL.exporttowkb(geom.ptr, eorder, pointer(buffer))
     buffer
@@ -303,7 +313,7 @@ Convert a geometry into SFSQL 1.2 / ISO SQL/MM Part 3 well known binary format.
 ### Returns
 Currently OGRERR_NONE is always returned.
 """
-function exportISOWKB(geom::Geometry, eorder::GDAL.OGRwkbByteOrder = GDAL.wkbNDR)
+function toISOWKB(geom::Geometry, eorder::GDAL.OGRwkbByteOrder = GDAL.wkbNDR)
     buffer = Array(Cuchar, wkbsize(geom))
     GDAL.exporttoisowkb(geom.ptr, eorder, pointer(buffer))
     buffer
@@ -358,10 +368,10 @@ wkbsize(geom::Geometry) = GDAL.wkbsize(geom.ptr)
 
 
 "Fetch geometry type code"
-geomtype(geom::Geometry) = GDAL.getgeometrytype(geom.ptr)
+getgeomtype(geom::Geometry) = GDAL.getgeometrytype(geom.ptr)
 
 "Fetch WKT name for geometry type."
-geomname(geom::Geometry) = GDAL.getgeometryname(geom.ptr)
+getgeomname(geom::Geometry) = GDAL.getgeometryname(geom.ptr)
 
 # """
 #     OGR_G_DumpReadable(OGRGeometryH hGeom,
@@ -388,7 +398,7 @@ closerings(geom::Geometry) = GDAL.closerings(geom.ptr)
 fromGML(data) = Geometry(GDAL.createfromgml(data))
 
 "Convert a geometry into GML format."
-exportGML(geom::Geometry) = GDAL.exporttogml(geom.ptr)
+toGML(geom::Geometry) = GDAL.exporttogml(geom.ptr)
 
 # """
 #     OGR_G_ExportToGMLEx(OGRGeometryH hGeometry,
@@ -436,11 +446,11 @@ Convert a geometry into KML format.
 * **geom**: the geometry to be converted.
 * **altitudemode**: value to write in altitudeMode element, or NULL.
 """
-exportKML(geom::Geometry) = GDAL.exporttokml(geom.ptr, C_NULL)
-exportKML(geom::Geometry, altitudemode) = GDAL.exporttokml(geom.ptr, altitude)
+toKML(geom::Geometry) = GDAL.exporttokml(geom.ptr, C_NULL)
+toKML(geom::Geometry, altitudemode) = GDAL.exporttokml(geom.ptr, altitude)
 
 "Convert a geometry into GeoJSON format."
-exportJSON(geom::Geometry) = GDAL.exporttojson(geom.ptr)
+toJSON(geom::Geometry) = GDAL.exporttojson(geom.ptr)
 
 # """
 #     OGR_G_ExportToJsonEx(OGRGeometryH hGeometry,
@@ -462,7 +472,7 @@ GeoJSON representation"""
 fromJSON(data) = Geometry(GDAL.creategeometryfromjson(data))
 
 "Assign spatial reference to this object."
-assignspatialref(geom::Geometry, spatialref::SpatialRef) = 
+setspatialref(geom::Geometry, spatialref::SpatialRef) = 
     GDAL.assignspatialreference(geom.ptr, spatialref.ptr)
 
 "Returns spatial reference system for geometry."
@@ -849,7 +859,8 @@ Fetch geometry from a geometry container.
 * **geom**: the geometry container from which to get a geometry from.
 * **i**: index of the geometry to fetch, between 0 and getNumGeometries() - 1.
 """
-fetchgeom(geom::Geometry, i::Integer) = Geometry(GDAL.getgeometryref(geom.ptr, i))
+fetchgeom(geom::Geometry, i::Integer) =
+    Geometry(GDAL.getgeometryref(geom.ptr, i))
 
 """
 Add a geometry to a geometry container.
@@ -942,9 +953,11 @@ Build a ring from a bunch of arcs.
     points of the ring are the same.
 * **tol**: whether two arcs are considered close enough to be joined.
 """
-function polygonfromedges(lines::Geometry, besteffort::Bool, autoclose::Bool, tol::Real)
+function polygonfromedges(lines::Geometry, besteffort::Bool, autoclose::Bool,
+                          tol::Real)
     peErr = Ref{GDAL.OGRErr}()
-    result = Geometry(GDAL.buildpolygonfromedges(lines.ptr, besteffort, autoclose, tol, peErr))
+    result = Geometry(GDAL.buildpolygonfromedges(lines.ptr, besteffort,
+                                                 autoclose, tol, peErr))
     if peErr[] != OGRERR_NONE
         error("Failed to build polygon from edges.")
     end

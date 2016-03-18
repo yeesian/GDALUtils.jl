@@ -1,9 +1,9 @@
 
 "Fetch driver by index"
-driver(i::Integer) = Driver(GDAL.getdriver(i-1))
+getdriver(i::Integer) = Driver(GDAL.getdriver(i-1))
 
 "Fetch a driver based on the short name (such as `GTiff`)."
-driver(name::AbstractString) = Driver(GDAL.getdriverbyname(name))
+getdriver(name::AbstractString) = Driver(GDAL.getdriverbyname(name))
 
 """
 Destroy a `GDALDriver`.
@@ -24,10 +24,10 @@ deregister(drv::Driver) = GDAL.deregisterdriver(drv.ptr)
 options(drv::Driver) = GDAL.getdrivercreationoptionlist(drv.ptr)
 
 "Return the short name of a driver (e.g. `GTiff`)"
-shortname(drv::Driver) = GDAL.getdrivershortname(drv.ptr)
+getshortname(drv::Driver) = GDAL.getdrivershortname(drv.ptr)
 
 "Return the long name of a driver (e.g. `GeoTIFF`), or empty string."
-longname(drv::Driver) = GDAL.getdriverlongname(drv.ptr)
+getlongname(drv::Driver) = GDAL.getdriverlongname(drv.ptr)
 
 "Fetch the number of registered drivers."
 ndriver() = GDAL.getdrivercount()
@@ -36,7 +36,7 @@ ndriver() = GDAL.getdrivercount()
 function drivers()
     dlist = Dict{ASCIIString,ASCIIString}()
     for i in 1:ndriver()
-        dlist[shortname(driver(i))] = longname(driver(i))
+        dlist[shortname(getdriver(i))] = longname(getdriver(i))
     end
     dlist
 end
@@ -49,7 +49,7 @@ by invoking the Identify method of each registered `GDALDriver` in turn. The
 first driver that successful identifies the file name will be returned. If all
 drivers fail then `NULL` is returned.
 """
-identify(filename::AbstractString) =
+identifydriver(filename::AbstractString) =
     Driver(GDAL.identifydriver(filename, C_NULL))
 
 """
