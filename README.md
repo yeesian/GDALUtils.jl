@@ -25,7 +25,7 @@ julia> band = GU.fetchband(raster, 1)
 julia> band.ptr
 Ptr{GDAL.GDALRasterBandH} @0x00007fa5dcd5e850
 
-julia> d = GU.driver(raster)
+julia> d = GU.getdriver(raster)
 Driver: GTiff/GeoTIFF
 
 julia> d.ptr
