@@ -2,7 +2,7 @@ function Base.show(io::IO, drv::Driver)
     if checknull(drv)
         print(io, "Null Driver")
     else
-        print(io, "Driver: $(shortname(drv))/$(longname(drv))")
+        print(io, "Driver: $(getshortname(drv))/$(getlongname(drv))")
     end
 end
 
@@ -11,7 +11,7 @@ function Base.show(io::IO, dataset::Dataset)
         print(io, "Closed Dataset")
     else
         nrasters = nraster(dataset)
-        println(io, "GDAL Dataset ($(driver(dataset)))")
+        println(io, "GDAL Dataset ($(getdriver(dataset)))")
         print(io, "\nFile(s): ")
         for (i,filename) in enumerate(filelist(dataset))
             print(io, "$filename ")
@@ -32,12 +32,12 @@ function summarize(io::IO, rasterband::RasterBand)
     if checknull(rasterband)
         println(io, "Null RasterBand")
     else
-        access = _access[accessflag(rasterband)]
-        color = nameof(getcolorinterp(rasterband))
+        access = _access[getaccess(rasterband)]
+        color = getcolorinterpname(getcolorinterp(rasterband))
         xsize = width(rasterband)
         ysize = height(rasterband)
-        i = bandindex(rasterband)
-        pxtype = pixeltype(rasterband)
+        i = indexof(rasterband)
+        pxtype = getdatatype(rasterband)
         println(io, "[$access] Band $i ($color): $xsize x $ysize ($pxtype)")
     end
 end
@@ -48,12 +48,12 @@ function Base.show(io::IO, rasterband::RasterBand)
     sc = getscale(rasterband)
     ofs = getoffset(rasterband)
     norvw = noverview(rasterband)
-    ut = getunits(rasterband)
-    nv = nullvalue(rasterband)
+    ut = getunittype(rasterband)
+    nv = getnodatavalue(rasterband)
     println(io, "    blocksize: $(x)x$(y), nodata: $nv, units: $(sc)px + $(ofs)$ut")
     print(io, "    overviews: ")
     for i in 1:norvw
-        ovr_band = overview(rasterband, i)
+        ovr_band = fetchoverview(rasterband, i)
         print(io, "$(width(ovr_band))x$(height(ovr_band)), ")
         if i % 5 == 0
             println(io, "")

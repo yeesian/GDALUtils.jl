@@ -43,7 +43,7 @@ fetchband(dataset::Dataset, i::Integer) =
 This method may return a value of 0 to indicate overviews, or free-standing
 `GDALRasterBand` objects without a relationship to a dataset.
 """
-getindex(rasterband::RasterBand) = GDAL.getbandnumber(rasterband.ptr)
+indexof(rasterband::RasterBand) = GDAL.getbandnumber(rasterband.ptr)
 
 """
 Fetch the handle to its dataset handle, or `NULL` if this cannot be determined.
