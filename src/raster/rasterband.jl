@@ -22,7 +22,7 @@ end
 
 "Fetch the pixel data type for this band."
 getdatatype(rasterband::RasterBand) =
-    _jltype(GDAL.getrasterdatatype(rasterband.ptr))
+    _jltype[GDAL.getrasterdatatype(rasterband.ptr)]
 
 "Fetch the width in pixels of this band."
 width(rasterband::RasterBand) = GDAL.getrasterbandxsize(rasterband.ptr)

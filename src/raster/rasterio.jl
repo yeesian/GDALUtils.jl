@@ -70,7 +70,7 @@ function rasterio!{T <: Real}(
     _nband = length(bands)
     @assert _nband == zsize
     GDAL.datasetrasterio(dataset.ptr, access, xoffset, yoffset, _width,
-                         _height, pointer(buffer), xsize, ysize, _gdaltype(T),
+                         _height, pointer(buffer), xsize, ysize, _gdaltype[T],
                          _nband, pointer(bands), nPixelSpace, nLineSpace,
                          nBandSpace)
     buffer
@@ -175,7 +175,7 @@ function rasterio!{T <: Real}(rasterband::RasterBand,
                               nLineSpace::Integer = 0)
     xsize, ysize = size(buffer)
     GDAL.rasterio(rasterband.ptr, access, xoffset, yoffset, _width, _height,
-                  pointer(buffer), xsize, ysize, _gdaltype(T),
+                  pointer(buffer), xsize, ysize, _gdaltype[T],
                   nPixelSpace, nLineSpace)
     buffer
 end
