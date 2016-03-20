@@ -3,6 +3,7 @@ function Base.show(io::IO, drv::Driver)
         print(io, "Null Driver")
     else
         print(io, "Driver: $(getshortname(drv))/$(getlongname(drv))")
+        # provide creation options too
     end
 end
 
@@ -12,25 +13,35 @@ function Base.show(io::IO, dataset::Dataset)
     else
         nrasters = nraster(dataset)
         println(io, "GDAL Dataset ($(getdriver(dataset)))")
-        print(io, "\nFile(s): ")
+        print(io, "File(s): ")
         for (i,filename) in enumerate(filelist(dataset))
             print(io, "$filename ")
             if i % 4 == 0 println() end
         end
-        print(io, "\nDataset (width x height): ")
-        println(io, "$(width(dataset)) x $(height(dataset)) (pixels)")
+        # print(io, "\nDataset (width x height): ")
+        # println(io, "$(width(dataset)) x $(height(dataset)) (pixels)\n")
+        println(io, "\nNumber of raster bands: $(nrasters)")
         for i in 1:min(nrasters, 3)
             print(io, "  ")
             summarize(io, fetchband(dataset, i))
         end
         nrasters > 3 && println(io, "  ...")
-        print(io, "Number of bands: $(nrasters)")
+
+        nlayers = nlayer(dataset)
+        println(io, "Number of feature layers: $(nlayers)")
+        for i in 1:min(nlayers, 3)
+            layer = fetchlayer(dataset, i-1)
+            layergeomtype = _geomname[getgeomtype(layer)]
+            print(io, "  Layer $i: $(getname(layer)) ")
+            println(io, "($layergeomtype), nfeatures = $(nfeature(layer))")
+        end
+        nlayers > 3 && print(io, "  ...")
     end
 end
 
 function summarize(io::IO, rasterband::RasterBand)
     if checknull(rasterband)
-        println(io, "Null RasterBand")
+        print(io, "Null RasterBand")
     else
         access = _access[getaccess(rasterband)]
         color = getcolorinterpname(getcolorinterp(rasterband))
@@ -38,7 +49,7 @@ function summarize(io::IO, rasterband::RasterBand)
         ysize = height(rasterband)
         i = indexof(rasterband)
         pxtype = getdatatype(rasterband)
-        println(io, "[$access] Band $i ($color): $xsize x $ysize ($pxtype)")
+        print(io, "[$access] Band $i ($color): $xsize x $ysize ($pxtype)")
     end
 end
 
@@ -59,5 +70,44 @@ function Base.show(io::IO, rasterband::RasterBand)
             println(io, "")
             print(io, "               ")
         end
+    end
+end
+
+function Base.show(io::IO, layer::FeatureLayer)
+    layergeomtype = _geomname[getgeomtype(layer)]
+    print(io, "Layer: $(getname(layer)) ")
+    println(io, "($layergeomtype), nfeatures = $(nfeature(layer))")
+    println("Feature Definition:")
+    featuredefn = getlayerdefn(layer)
+    n = ngeomfield(featuredefn)
+    for i in 1:min(n, 3)
+        gfd = fetchgeomfielddefn(featuredefn, i-1)
+        println(io, "  Geometry (index $(i-1)): $(getname(gfd)) ($(_geomname[gettype(gfd)]))")
+    end
+    n > 3 && println(io, "  ...\n  Number of Geometries: $n")
+    n = nfield(featuredefn)
+    for i in 1:min(n, 3)
+        fd = fetchfielddefn(featuredefn, i-1)
+        println(io, "  Field    (index $(i-1)): $(getname(fd)) ($(_fieldtype[gettype(fd)]))")
+    end
+    n > 3 && print(io, "...\n Number of Fields: $n")
+end
+
+function Base.show(io::IO, feature::Feature)
+    println(io, "Feature")
+    n = nfield(feature)
+    for i in 1:n
+        print(io, "$(getname(fetchfielddefn(feature, i-1))) => ")
+        println("$(fetchfield(feature, i-1))")
+    end
+    n > 3 && println(io, "...\n Number of Fields: $n")
+    n = ngeomfield(feature)
+    if n > 2
+        for i in 1:min(n, 3)
+            println(io, "Geometry $(i-1): $(getgeomname(fetchgeomfield(feature, i-1)))")
+        end
+        n > 3 && print(io, "...\n Number of geometries: $n")
+    elseif n == 1
+        print(io, "geom => $(getgeomname(fetchgeomfield(feature, 0)))")
     end
 end
