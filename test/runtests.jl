@@ -26,7 +26,7 @@ GU.create("pyrasterio/example.tif",
                    500, # width
                    300, # height
                    1, # number of bands
-                   UInt8, # DataType
+                   UInt8 # DataType
           ) do raster
     image = fill(UInt8(127), (150, 250))
     GU.update!( raster,
