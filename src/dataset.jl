@@ -64,9 +64,9 @@ force pixel interleaved operation and "COMPRESSED=YES" to force alignment on
 target dataset block sizes to achieve best compression. More options may be
 supported in the future.
 """
-copywholeraster(source::Dataset, dest::Dataset, options) =
+copywholeraster(source::Dataset, dest::Dataset) =
     GDAL.datasetcopywholeraster(source.ptr, dest.ptr,
-                                Ptr{Ptr{UInt8}}(pointer(options)),
+                                Ptr{Ptr{UInt8}}(pointer(C_NULL)),
                                 Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL)
 
 """
@@ -116,18 +116,7 @@ function createcopy(filename::AbstractString,
                     driver::Driver,
                     strict::Bool = false)
     Dataset(GDAL.createcopy(driver.ptr, filename, dataset.ptr, strict,
-                            C_NULL, C_NULL, C_NULL))
-end
-
-function createcopy{T <: AbstractString}(
-                    filename::AbstractString,
-                    dataset::Dataset,
-                    driver::Driver,
-                    options::Vector{T},
-                    strict::Bool = false)
-    Dataset(GDAL.createcopy(driver.ptr, filename, dataset.ptr, strict,
-                            Ptr{Ptr{UInt8}}(pointer(options)),
-                            Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL))
+                            C_NULL, Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL))
 end
 
 function createcopy(f::Function, args...)
@@ -147,8 +136,8 @@ function create(filename::AbstractString,
                 dtype::DataType = Any,
                 options::Vector{ASCIIString} = Vector{ASCIIString}())
     Dataset(GDAL.create(driver.ptr, filename,
-                        width, height, nbands, _gdaltype(dtype),
-                        Ptr{Ptr{UInt8}}(pointer(options))))
+                        width, height, nbands, _gdaltype[dtype],
+                        Ptr{Ptr{UInt8}}(C_NULL)))
 end
 
 function create(filename::AbstractString,
@@ -156,11 +145,10 @@ function create(filename::AbstractString,
                 width::Int = 0,
                 height::Int = 0,
                 nbands::Int = 0,
-                dtype::DataType = Any,
-                options::Vector{ASCIIString} = Vector{ASCIIString}())
+                dtype::DataType = Any)
     Dataset(GDAL.create(GDAL.getdriverbyname(drivername), filename,
-                        width, height, nbands, _gdaltype(dtype),
-                        Ptr{Ptr{UInt8}}(pointer(options))))
+                        width, height, nbands, _gdaltype[dtype],
+                        Ptr{Ptr{UInt8}}(C_NULL)))
 end
 
 function create(f::Function, args...)
@@ -250,28 +238,25 @@ end
 
 function write(filename::AbstractString,
                dataset::Dataset,
-               strict::Bool = false,
-               options::Vector{ASCIIString} = Vector{ASCIIString}())
+               strict::Bool = false)
     checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(filename, dataset, getdriver(dataset), options, strict))
+    close(createcopy(filename, dataset, getdriver(dataset), strict))
 end
 
 function write(dataset::Dataset,
                filename::AbstractString,
                driver::Driver,
-               strict::Bool = false,
-               options::Vector{ASCIIString} = Vector{ASCIIString}())
+               strict::Bool = false)
     checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(filename, dataset, driver, options, strict))
+    close(createcopy(filename, dataset, driver, strict))
 end
 
 function write(dataset::Dataset,
                filename::AbstractString,
                drivername::AbstractString,
-               strict::Bool = false,
-               options::Vector{ASCIIString} = Vector{ASCIIString}())
+               strict::Bool = false)
     checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(filename, dataset, getdriver(name), options, strict))
+    close(createcopy(filename, dataset, getdriver(name), strict))
 end
 
 function write(f::Function, args...)
@@ -316,9 +301,8 @@ are format specific. `NULL` may be passed by default.
 addband(dataset::Dataset, eType::GDAL.GDALDataType) =
     GDAL.addband(dataset.ptr, eType, C_NULL)
 
-addband{T <: AbstractString}(dataset::Dataset, eType::GDAL.GDALDataType,
-                             options::Vector{T}) =
-    GDAL.addband(dataset.ptr, eType, Ptr{Ptr{UInt8}}(pointer(options)))
+addband(dataset::Dataset, eType::GDAL.GDALDataType) =
+    GDAL.addband(dataset.ptr, eType, Ptr{Ptr{UInt8}}(C_NULL))
 
 """
 Fetch files forming dataset.
