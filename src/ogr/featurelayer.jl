@@ -323,6 +323,27 @@ internal reference, and should not be deleted or modified.
 fetchfielddefn(feature::Feature, i::Integer) =
     FieldDefn(GDAL.getfielddefnref(feature.ptr, i))
 
+fetchfields(feature::Feature) =
+    Dict([getname(fetchfielddefn(feature, i-1)) => fetchfield(feature, i-1)
+         for i in 1:nfield(feature)])
+
+fetchfields{T <: Integer}(feature::Feature, indices::UnitRange{T}) =
+    Dict([getname(fetchfielddefn(feature, i)) => fetchfield(feature, i)
+         for i in indices])
+
+fetchfields{T <: Integer}(feature::Feature, indices::Vector{T}) =
+    Dict([getname(fetchfielddefn(feature, i)) => fetchfield(feature, i)
+         for i in indices])
+
+fetchfields(feature::Feature, names::Vector{ASCIIString}) =
+    Dict([name => fetchfield(feature, getfieldindex(feature, name))
+         for name in names])
+
+fetchgeomfields(feature::Feature) =
+    Dict([getname(fetchgeomfielddefn(feature, i)) =>
+          toWKT(fetchgeomfield(feature, i))
+          for i in 1:ngeomfield(feature)])
+
 """
 Fetch the field index given field name.
 
@@ -527,6 +548,21 @@ asstring(feature::Feature, i::Integer) = GDAL.getfieldasstring(feature.ptr, i)
 #     ccall((:OGR_F_GetFieldAsDateTimeEx,libgdal),Cint,(Ptr{OGRFeatureH},Cint,Ptr{Cint},Ptr{Cint},Ptr{Cint},Ptr{Cint},Ptr{Cint},Ptr{Cfloat},Ptr{Cint}),hFeat,iField,pnYear,pnMonth,pnDay,pnHour,pnMinute,pfSecond,pnTZFlag)
 # end
 
+function fetchfield(feature::Feature, i::Integer)
+    const FETCHFIELD = Dict{GDAL.OGRFieldType, Function}(
+                        GDAL.OFTInteger => asint,
+                        GDAL.OFTInteger64 => asint64,
+                        GDAL.OFTReal => asdouble,
+                        GDAL.OFTString => asstring)
+    asnothing(feature::Feature, i::Integer) = nothing
+    if isfieldset(feature, i)
+        # _fielddefn = 
+        # _fieldname = getname(feature, i)
+        _fieldtype = gettype(fetchfielddefn(feature, i))
+        _fetchfield = get(FETCHFIELD, _fieldtype, asnothing)
+        return _fetchfield(feature, i)
+    end
+end
 
 """
 Set field to integer value.
