@@ -15,5 +15,6 @@ module GDALUtils
     include("ogr/featuredefn.jl")
     include("ogr/fielddefn.jl")
     include("display.jl")
+    include("iteration.jl")
 
 end # module
