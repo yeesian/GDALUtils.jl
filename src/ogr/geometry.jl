@@ -812,7 +812,7 @@ Add a point to a geometry (line string or point).
 * **y**: y coordinate of point to add.
 * **z**: z coordinate of point to add.
 """
-addpoint(geom::Geometry, x, y, z) = GDAL.addpoint(geom.ptr, i, x, y, z)
+addpoint(geom::Geometry, x, y, z) = GDAL.addpoint(geom.ptr, x, y, z)
 
 """
 Add a point to a geometry (line string or point).
@@ -822,7 +822,7 @@ Add a point to a geometry (line string or point).
 * **x**: x coordinate of point to add.
 * **y**: y coordinate of point to add.
 """
-addpoint(geom::Geometry, x, y) = GDAL.addpoint_2d(geom.ptr, i, x, y)
+addpoint(geom::Geometry, x, y) = GDAL.addpoint_2d(geom.ptr, x, y)
 
 # """
 #     OGR_G_SetPoints(OGRGeometryH hGeom,
