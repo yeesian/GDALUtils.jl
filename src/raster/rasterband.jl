@@ -267,74 +267,76 @@ clearcolortable(rasterband::RasterBand) =
 #     GDALRasterAdviseRead(hRB, nDSXOff, nDSYOff, nDSXSize, nDSYSize, nBXSize,
 #                          nBYSize, eBDataType, papszOptions)::CPLErr
 
-# """
-# Read a block of image data efficiently.
+"""
+Read a block of image data efficiently.
 
-# This method accesses a "natural" block from the raster band without resampling,
-# or data type conversion. For a more generalized, but potentially less efficient
-# access use RasterIO().
+This method accesses a "natural" block from the raster band without resampling,
+or data type conversion. For a more generalized, but potentially less efficient
+access use RasterIO().
 
-# See the `GetLockedBlockRef()` method for a way of accessing internally cached
-# block oriented data without an extra copy into an application buffer.
+See the `GetLockedBlockRef()` method for a way of accessing internally cached
+block oriented data without an extra copy into an application buffer.
 
-# ### Parameters
-# * `nXBlockOff`  the horizontal block offset, with zero indicating the left most
-# block, 1 the next block and so forth.
-# * `nYBlockOff`  the vertical block offset, with zero indicating the left most
-# block, 1 the next block and so forth.
-# * `pImage`      the buffer into which the data will be read. The buffer must be
-# large enough to hold `GetBlockXSize()*GetBlockYSize()` words of type
-# `GetRasterDataType()`.
+### Parameters
+* `nXBlockOff`  the horizontal block offset, with zero indicating the left most
+block, 1 the next block and so forth.
+* `nYBlockOff`  the vertical block offset, with zero indicating the left most
+block, 1 the next block and so forth.
+* `pImage`      the buffer into which the data will be read. The buffer must be
+large enough to hold `GetBlockXSize()*GetBlockYSize()` words of type
+`GetRasterDataType()`.
 
-# ### Returns
-# `CE_None` on success or `CE_Failure` on an error.
-# """
-# _readblock(band::GDALRasterBandH,
-#            nXBlockOff::Integer,
-#            nYBlockOff::Integer,
-#            pImage::Ptr{Void}) = 
-#     GDALReadBlock(band, nXBlockOff, nYBlockOff, pImage)::CPLErr
+### Returns
+`CE_None` on success or `CE_Failure` on an error.
+"""
+function readblock!(band::RasterBand, nxoff::Integer, nyoff::Integer,
+                    buffer::Array)
+    result = GDAL.readblock(band.ptr, nxoff, nyoff, pointer(buffer))
+    (result != GDAL.CE_None) && error("Failed to read block")
+    buffer
+end
 
-# """
-# Write a block of image data efficiently.
+"""
+Write a block of image data efficiently.
 
-# This method accesses a "natural" block from the raster band without resampling,
-# or data type conversion. For a more generalized, but potentially less efficient
-# access use `RasterIO()`.
+This method accesses a "natural" block from the raster band without resampling,
+or data type conversion. For a more generalized, but potentially less efficient
+access use `RasterIO()`.
 
-# See `ReadBlock()` for an example of block oriented data access.
+See `ReadBlock()` for an example of block oriented data access.
 
-# ### Parameters
-# * `nXBlockOff`  the horizontal block offset, with zero indicating the left most
-# block, 1 the next block and so forth.
-# * `nYBlockOff`  the vertical block offset, with zero indicating the left most
-# block, 1 the next block and so forth.
-# * `pImage`      the buffer from which the data will be written. The buffer must
-# be large enough to hold `GetBlockXSize()*GetBlockYSize()` words of type
-# `GetRasterDataType()`.
+### Parameters
+* `nXBlockOff`  the horizontal block offset, with zero indicating the left most
+block, 1 the next block and so forth.
+* `nYBlockOff`  the vertical block offset, with zero indicating the left most
+block, 1 the next block and so forth.
+* `pImage`      the buffer from which the data will be written. The buffer must
+be large enough to hold `GetBlockXSize()*GetBlockYSize()` words of type
+`GetRasterDataType()`.
 
-# ### Returns
-# `CE_None` on success or `CE_Failure` on an error.
-# """
-# _writeblock(band::GDALRasterBandH,
-#             nXBlockOff::Integer,
-#             nYBlockOff::Integer,
-#             pImage::Ptr{Void}) = 
-#     GDALWriteBlock(band, nXBlockOff, nYBlockOff, pImage)::CPLErr
+### Returns
+`CE_None` on success or `CE_Failure` on an error.
+"""
+function writeblock!(band::RasterBand, nxoff::Integer, nyoff::Integer,
+                     image::Array)
+    result = GDAL.writeblock(band.ptr, nxoff, nyoff, pointer(image))
+    (result != GDAL.CE_None) && error("Failed to write block")
+    image
+end
 
-# """
-# Check for arbitrary overviews.
+"""
+Check for arbitrary overviews.
 
-# This returns `TRUE` if the underlying datastore can compute arbitrary overviews
-# efficiently, e.g. with OGDI over a network. Datastores with arbitrary overviews
-# don't generally have any fixed overviews, but the `RasterIO()` method can be
-# used in downsampling mode to get overview data efficiently.
+This returns `TRUE` if the underlying datastore can compute arbitrary overviews
+efficiently, e.g. with OGDI over a network. Datastores with arbitrary overviews
+don't generally have any fixed overviews, but the `RasterIO()` method can be
+used in downsampling mode to get overview data efficiently.
 
-# ### Returns
-# `TRUE` if arbitrary overviews available (efficiently), otherwise `FALSE`.
-# """
-# _hasarbitraryoverviews(band::GDALRasterBandH) =
-#     GDALHasArbitraryOverviews(band)::Cint
+### Returns
+`TRUE` if arbitrary overviews available (efficiently), otherwise `FALSE`.
+"""
+hasarbitraryoverviews(band::RasterBand) =
+    Bool(GDAL.hasarbitraryoverviews(band.ptr))
 
 # """
 # Fetch the list of category names for this raster.
@@ -358,127 +360,134 @@ clearcolortable(rasterband::RasterBand) =
 # _setrastercategorynames(band::GDALRasterBandH, names::Ptr{Ptr{UInt8}}) =
 #     GDALSetRasterCategoryNames(band, names)::CPLErr
 
-# """
-# Flush raster data cache.
+"""
+Flush raster data cache.
 
-# This call will recover memory used to cache data blocks for this raster band,
-# and ensure that new requests are referred to the underlying driver.
+This call will recover memory used to cache data blocks for this raster band,
+and ensure that new requests are referred to the underlying driver.
 
-# ### Returns
-# `CE_None` on success.
-# """
-# _flushrastercache(band::GDALRasterBandH) = GDALFlushRasterCache(band)::CPLErr
+### Returns
+`CE_None` on success.
+"""
+function flushcache(band::RasterBand)
+    result = GDAL.flushcache(band.ptr)
+    (result != GDAL.CE_None) && error("Failed to flush raster data cache")
+end
 
-# """
-# Fill this band with a constant value.
+"""
+Fill this band with a constant value.
 
-# GDAL makes no guarantees about what values pixels in newly created files are
-# set to, so this method can be used to clear a band to a specified "default"
-# value. The fill value is passed in as a double but this will be converted to
-# the underlying type before writing to the file. An optional second argument
-# allows the imaginary component of a complex constant value to be specified.
+GDAL makes no guarantees about what values pixels in newly created files are
+set to, so this method can be used to clear a band to a specified "default"
+value. The fill value is passed in as a double but this will be converted to
+the underlying type before writing to the file. An optional second argument
+allows the imaginary component of a complex constant value to be specified.
 
-# ### Parameters
-# * `dfRealValue`         Real component of fill value
-# * `dfImaginaryValue`    Imaginary component of fill value, defaults to zero
+### Parameters
+* `dfRealValue`         Real component of fill value
+* `dfImaginaryValue`    Imaginary component of fill value, defaults to zero
 
-# ### Returns
-# `CE_Failure` if the write fails, otherwise `CE_None`
-# """
-# _fillraster(band::GDALRasterBandH,
-#             dfRealValue::Cdouble,
-#             dfImaginaryValue::Cdouble = 0) =
-#     GDALFillRaster(band, dfRealValue, dfImaginaryValue)::CPLErr
+### Returns
+`CE_Failure` if the write fails, otherwise `CE_None`
+"""
+function fillraster(band::RasterBand,
+                    realvalue::Cdouble,
+                    imagvalue::Cdouble = 0)
+    result = GDAL.fillraster(band.ptr, realvalue, imagvalue)
+    (result != GDAL.CE_None) && error("Failed to fill raster band")
+end
 
-# """
-# Return the mask band associated with the band. (Since: GDAL 1.6.0)
+"""
+Return the mask band associated with the band. (Since: GDAL 1.6.0)
 
-# The `GDALRasterBand` class includes a default implementation of `GetMaskBand()`
-# that returns one of four default implementations:
+The `GDALRasterBand` class includes a default implementation of `GetMaskBand()`
+that returns one of four default implementations:
 
-# - If a corresponding .msk file exists it will be used for the mask band.
-# - If the dataset has a `NODATA_VALUES` metadata item, an instance of the new
-# GDALNoDataValuesMaskBand class will be returned. `GetMaskFlags()` will return
-# `GMF_NODATA | GMF_PER_DATASET`.
-# - If the band has a nodata value set, an instance of the new
-# `GDALNodataMaskRasterBand` class will be returned. `GetMaskFlags()` will
-# return `GMF_NODATA`.
-# - If there is no nodata value, but the dataset has an alpha band that seems to
-# apply to this band (specific rules yet to be determined) and that is of type
-# `GDT_Byte` then that alpha band will be returned, and the flags
-# `GMF_PER_DATASET` and `GMF_ALPHA` will be returned in the flags.
-# - If neither of the above apply, an instance of the new
-# `GDALAllValidRasterBand` class will be returned that has 255 values for all
-# pixels. The null flags will return `GMF_ALL_VALID`.
+- If a corresponding .msk file exists it will be used for the mask band.
+- If the dataset has a `NODATA_VALUES` metadata item, an instance of the new
+GDALNoDataValuesMaskBand class will be returned. `GetMaskFlags()` will return
+`GMF_NODATA | GMF_PER_DATASET`.
+- If the band has a nodata value set, an instance of the new
+`GDALNodataMaskRasterBand` class will be returned. `GetMaskFlags()` will
+return `GMF_NODATA`.
+- If there is no nodata value, but the dataset has an alpha band that seems to
+apply to this band (specific rules yet to be determined) and that is of type
+`GDT_Byte` then that alpha band will be returned, and the flags
+`GMF_PER_DATASET` and `GMF_ALPHA` will be returned in the flags.
+- If neither of the above apply, an instance of the new
+`GDALAllValidRasterBand` class will be returned that has 255 values for all
+pixels. The null flags will return `GMF_ALL_VALID`.
 
-# Note that the `GetMaskBand()` should always return a `GDALRasterBand` mask,
-# even if it is only an all 255 mask with the flags indicating `GMF_ALL_VALID`.
+Note that the `GetMaskBand()` should always return a `GDALRasterBand` mask,
+even if it is only an all 255 mask with the flags indicating `GMF_ALL_VALID`.
 
-# See also: http://trac.osgeo.org/gdal/wiki/rfc15_nodatabitmask
+See also: http://trac.osgeo.org/gdal/wiki/rfc15_nodatabitmask
 
-# ### Returns
-# a valid mask band.
-# """
-# _getmaskband(band::GDALRasterBandH) = GDALGetMaskBand(band)::GDALRasterBandH
+### Returns
+a valid mask band.
+"""
+getmaskband(band::RasterBand) = RasterBand(GDAL.getmaskband(band.ptr))
 
-# """
-# Return the status flags of the mask band associated with the band.
+"""
+Return the status flags of the mask band associated with the band.
 
-# The GetMaskFlags() method returns an bitwise OR-ed set of status flags with the
-# following available definitions that may be extended in the future:
+The GetMaskFlags() method returns an bitwise OR-ed set of status flags with the
+following available definitions that may be extended in the future:
 
-# * `GMF_ALL_VALID` (`0x01`):    There are no invalid pixels, all mask values
-# will be 255. When used this will normally be the only flag set.
-# * `GMF_PER_DATASET` (`0x02`):  The mask band is shared between all bands on
-# the dataset.
-# - `GMF_ALPHA` (`0x04`):        The mask band is actually an alpha band and may
-# have values other than 0 and 255.
-# - `GMF_NODATA` (`0x08`):       Indicates the mask is actually being generated
-# from nodata values. (mutually exclusive of `GMF_ALPHA`)
+* `GMF_ALL_VALID` (`0x01`):    There are no invalid pixels, all mask values
+will be 255. When used this will normally be the only flag set.
+* `GMF_PER_DATASET` (`0x02`):  The mask band is shared between all bands on
+the dataset.
+- `GMF_ALPHA` (`0x04`):        The mask band is actually an alpha band and may
+have values other than 0 and 255.
+- `GMF_NODATA` (`0x08`):       Indicates the mask is actually being generated
+from nodata values. (mutually exclusive of `GMF_ALPHA`)
 
-# The `GDALRasterBand` class includes a default implementation of `GetMaskBand()`
-# that returns one of four default implementations:
+The `GDALRasterBand` class includes a default implementation of `GetMaskBand()`
+that returns one of four default implementations:
 
-# - If a corresponding .msk file exists it will be used for the mask band.
-# - If the dataset has a `NODATA_VALUES` metadata item, an instance of the new
-# `GDALNoDataValuesMaskBand` class will be returned. `GetMaskFlags()` will return
-# `GMF_NODATA | GMF_PER_DATASET`.
-# - If the band has a nodata value set, an instance of the new
-# `GDALNodataMaskRasterBand` class will be returned. `GetMaskFlags()` will return
-# `GMF_NODATA`.
-# - If there is no nodata value, but the dataset has an alpha band that seems to
-# apply to this band (specific rules yet to be determined) and that is of type
-# `GDT_Byte` then that alpha band will be returned, and the flags `GMF_PER_DATASET`
-# and `GMF_ALPHA` will be returned in the flags.
-# - If neither of the above apply, an instance of the new `GDALAllValidRasterBand`
-# class will be returned that has 255 values for all pixels. The null flags will
-# return `GMF_ALL_VALID`.
+- If a corresponding .msk file exists it will be used for the mask band.
+- If the dataset has a `NODATA_VALUES` metadata item, an instance of the new
+`GDALNoDataValuesMaskBand` class will be returned. `GetMaskFlags()` will return
+`GMF_NODATA | GMF_PER_DATASET`.
+- If the band has a nodata value set, an instance of the new
+`GDALNodataMaskRasterBand` class will be returned. `GetMaskFlags()` will return
+`GMF_NODATA`.
+- If there is no nodata value, but the dataset has an alpha band that seems to
+apply to this band (specific rules yet to be determined) and that is of type
+`GDT_Byte` then that alpha band will be returned, and the flags `GMF_PER_DATASET`
+and `GMF_ALPHA` will be returned in the flags.
+- If neither of the above apply, an instance of the new `GDALAllValidRasterBand`
+class will be returned that has 255 values for all pixels. The null flags will
+return `GMF_ALL_VALID`.
 
-# See also: http://trac.osgeo.org/gdal/wiki/rfc15_nodatabitmask
+See also: http://trac.osgeo.org/gdal/wiki/rfc15_nodatabitmask
 
-# ### Returns
-# a valid mask band.
-# """
-# _getmaskflags(band::GDALRasterBandH) = GDALGetMaskFlags(band)::Cint
+### Returns
+a valid mask band.
+"""
+getmaskflags(band::RasterBand) = GDAL.getmaskflags(band.ptr)
 
-# """
-# Adds a mask band to the current band.
+"""
+Adds a mask band to the current band.
 
-# The default implementation of the `CreateMaskBand()` method is implemented
-# based on similar rules to the `.ovr` handling implemented using the
-# `GDALDefaultOverviews` object. A `TIFF` file with the extension `.msk` will be
-# created with the same basename as the original file, and it will have as many
-# bands as the original image (or just one for `GMF_PER_DATASET`). The mask
-# images will be deflate compressed tiled images with the same block size as the
-# original image if possible.
+The default implementation of the `CreateMaskBand()` method is implemented
+based on similar rules to the `.ovr` handling implemented using the
+`GDALDefaultOverviews` object. A `TIFF` file with the extension `.msk` will be
+created with the same basename as the original file, and it will have as many
+bands as the original image (or just one for `GMF_PER_DATASET`). The mask
+images will be deflate compressed tiled images with the same block size as the
+original image if possible.
 
-# If you got a mask band with a previous call to `GetMaskBand()`, it might be
-# invalidated by `CreateMaskBand()`. So you have to call `GetMaskBand()` again.
+If you got a mask band with a previous call to `GetMaskBand()`, it might be
+invalidated by `CreateMaskBand()`. So you have to call `GetMaskBand()` again.
 
-# See also: http://trac.osgeo.org/gdal/wiki/rfc15_nodatabitmask
+See also: http://trac.osgeo.org/gdal/wiki/rfc15_nodatabitmask
 
-# ### Returns
-# `CE_None` on success or `CE_Failure` on an error.
-# """
-# _createmaskband(band::GDALRasterBandH,nFlags::Integer) =
-#     GDALCreateMaskBand(band, nFlags)::CPLErr
+### Returns
+`CE_None` on success or `CE_Failure` on an error.
+"""
+function createmaskband(band::RasterBand, nFlags::Integer)
+    result = GDAL.createmaskband(band.ptr, nFlags)
+    (result != GDAL.CE_None) && error("Failed to create mask band")
+end
