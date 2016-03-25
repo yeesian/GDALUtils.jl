@@ -32,7 +32,7 @@ function Base.show(io::IO, dataset::Dataset)
         for i in 1:min(nlayers, 3)
             layer = fetchlayer(dataset, i-1)
             layergeomtype = _geomname[getgeomtype(layer)]
-            print(io, "  Layer $i: $(getname(layer)) ")
+            print(io, "  Layer $(i-1): $(getname(layer)) ")
             println(io, "($layergeomtype), nfeatures = $(nfeature(layer))")
         end
         nlayers > 3 && print(io, "  ...")
@@ -49,7 +49,7 @@ function summarize(io::IO, rasterband::RasterBand)
         ysize = height(rasterband)
         i = indexof(rasterband)
         pxtype = getdatatype(rasterband)
-        print(io, "[$access] Band $i ($color): $xsize x $ysize ($pxtype)")
+        println(io, "[$access] Band $i ($color): $xsize x $ysize ($pxtype)")
     end
 end
 
@@ -95,19 +95,15 @@ end
 
 function Base.show(io::IO, feature::Feature)
     println(io, "Feature")
+    n = ngeomfield(feature)
+    for i in 1:min(n, 3)
+        println(io, "  (index $(i-1)) geom => $(getgeomname(fetchgeomfield(feature, i-1)))")
+    end
+    n > 3 && println(io, "...\n Number of geometries: $n")
     n = nfield(feature)
     for i in 1:n
-        print(io, "$(getname(fetchfielddefn(feature, i-1))) => ")
+        print(io, "  (index $(i-1)) $(getname(fetchfielddefn(feature, i-1))) => ")
         println("$(fetchfield(feature, i-1))")
     end
-    n > 3 && println(io, "...\n Number of Fields: $n")
-    n = ngeomfield(feature)
-    if n > 2
-        for i in 1:min(n, 3)
-            println(io, "Geometry $(i-1): $(getgeomname(fetchgeomfield(feature, i-1)))")
-        end
-        n > 3 && print(io, "...\n Number of geometries: $n")
-    elseif n == 1
-        print(io, "geom => $(getgeomname(fetchgeomfield(feature, 0)))")
-    end
+    n > 3 && print(io, "...\n Number of Fields: $n")
 end
