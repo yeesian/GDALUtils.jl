@@ -597,8 +597,8 @@ Compute buffer of geometry.
 * **quadsegs**: the number of segments used to approximate a 90 degree
     (quadrant) of curvature.
 """
-buffer(geom::Geometry, dist::Real, quadsegs::Integer) =
-    Geometry(GDAL.buffer(geom, dist, quadsegs))
+buffer(geom::Geometry, dist::Real, quadsegs::Integer=8) =
+    Geometry(GDAL.buffer(geom.ptr, dist, quadsegs))
 
 """
 Compute the intersection of the geometries.
