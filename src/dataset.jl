@@ -403,58 +403,47 @@ end
 # _dereferencedataset(dataset::GDALDatasetH) =
 #     GDALDereferenceDataset(dataset)::Cint
 
-# """
-# Build raster overview(s).
+"""
+Build raster overview(s).
 
-# If the operation is unsupported for the indicated dataset, then CE_Failure is
-# returned, and CPLGetLastErrorNo() will return CPLE_NotSupported.
+If the operation is unsupported for the indicated dataset, then CE_Failure is
+returned, and CPLGetLastErrorNo() will return CPLE_NotSupported.
 
-# ### Parameters
-# * `pszResampling`   one of "NEAREST", "GAUSS", "CUBIC", "AVERAGE", "MODE",
-# "AVERAGE_MAGPHASE" or "NONE" controlling the downsampling method applied.
-# * `nOverviews`      number of overviews to build.
-# * `panOverviewList` the list of overview decimation factors to build.
-# * `nListBands`      number of bands to build overviews for in `panBandList`.
-# Build for all bands if this is 0.
-# * `panBandList`     list of band numbers.
-# * `pfnProgress`     a function to call to report progress, or `NULL`.
-# * `pProgressData`   application data to pass to the progress function.
+### Parameters
+* `pszResampling`   one of "NEAREST", "GAUSS", "CUBIC", "AVERAGE", "MODE",
+"AVERAGE_MAGPHASE" or "NONE" controlling the downsampling method applied.
+* `nOverviews`      number of overviews to build.
+* `panOverviewList` the list of overview decimation factors to build.
+* `nListBands`      number of bands to build overviews for in `panBandList`.
+Build for all bands if this is 0.
+* `panBandList`     list of band numbers.
+* `pfnProgress`     a function to call to report progress, or `NULL`.
+* `pProgressData`   application data to pass to the progress function.
 
-# ### Returns
-# `CE_None` on success or `CE_Failure` if the operation doesn't work.
+### Returns
+`CE_None` on success or `CE_Failure` if the operation doesn't work.
 
-# For example, to build overview level 2, 4 and 8 on all bands the following
-# call could be made:
+For example, to build overview level 2, 4 and 8 on all bands the following
+call could be made:
 
-# ```C
-#    int       anOverviewList[3] = { 2, 4, 8 };
-#    poDataset->BuildOverviews( "NEAREST", 3, anOverviewList, 0, NULL, 
-#                               GDALDummyProgress, NULL );
-# ```
-# """
-# _buildoverviews(arg1::GDALDatasetH,
-#                 pszResampling::Ptr{UInt8},
-#                 nOverviews::Integer,
-#                 panOverviewList::Ptr{Cint},
-#                 nListBands::Integer,
-#                 panBandList::Ptr{Cint},
-#                 pfnProgress::GDALProgressFunc,
-#                 pProgressData::Ptr{Void}) =
-#     GDALBuildOverviews(pszResampling, nOverviews, panOverviewList, nListBands,
-#                        panBandList, pfnProgress, pProgressData)::CPLErr
-
-# function buildoverviews(hDS::GDALDatasetH,
-#                         resampling::ASCIIString,
-#                         overviewlist::Vector{Cint},
-#                         bandList::Vector{Cint})
-#     result = _buildoverviews(hDS, pointer(resampling),
-#                              length(overviewlist),
-#                              pointer(overviewlist),
-#                              length(bandlist),
-#                              pointer(bandlist),
-#                              C_NULL, C_NULL)
-#     (result == CE_Failure) && error("Failed to build overviews")
-# end
+```C
+   int       anOverviewList[3] = { 2, 4, 8 };
+   poDataset->BuildOverviews( "NEAREST", 3, anOverviewList, 0, NULL, 
+                              GDALDummyProgress, NULL );
+```
+"""
+function buildoverviews(dataset::Dataset,
+                        resampling::AbstractString,
+                        overviewlist::Vector{Cint},
+                        bandList::Vector{Cint})
+    result = GDAL.buildoverviews(dataset.ptr, pointer(resampling),
+                                 length(overviewlist),
+                                 pointer(overviewlist),
+                                 length(bandlist),
+                                 pointer(bandlist),
+                                 C_NULL, C_NULL)
+    (result == CE_Failure) && error("Failed to build overviews")
+end
 
 # """
 # Fetch all open GDAL dataset handles.
