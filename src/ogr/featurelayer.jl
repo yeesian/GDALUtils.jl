@@ -48,6 +48,21 @@ setspatialfilter(layer::FeatureLayer, index::Integer,
                  xmin::Real, ymin::Real, xmax::Real, ymax::Real) = 
     GDAL.setspatialfilterrectex(layer.ptr, index, xmin, ymin, xmax, ymax)
 
+"""
+    OGR_L_SetAttributeFilter(OGRLayerH,
+                             const char *) -> OGRErr
+Set a new attribute query.
+### Parameters
+* **hLayer**: handle to the layer on which attribute query will be executed.
+* **pszQuery**: query in restricted SQL WHERE format, or NULL to clear the current query.
+### Returns
+OGRERR_NONE if successfully installed, or an error code if the query expression is in error, or some other failure occurs.
+"""
+function setattributefilter(layer::FeatureLayer, query::AbstractString)
+    result = GDAL.setattributefilter(layer.ptr, query)
+    (result != GDAL.OGRERR_NONE) && error("Failed to set a new attribute query")
+end
+
 "Fetch a layer by index (between 0 and GetLayerCount()-1)"
 fetchlayer(dataset::Dataset, i::Integer) =
     FeatureLayer(GDAL.datasetgetlayer(dataset.ptr, i))
@@ -563,6 +578,9 @@ function fetchfield(feature::Feature, i::Integer)
         return _fetchfield(feature, i)
     end
 end
+
+fetchfield(feature::Feature, name::AbstractString) =
+    fetchfield(feature, getfieldindex(feature, name))
 
 """
 Set field to integer value.
