@@ -86,11 +86,11 @@ function Base.show(io::IO, layer::FeatureLayer)
     end
     n > 3 && println(io, "  ...\n  Number of Geometries: $n")
     n = nfield(featuredefn)
-    for i in 1:min(n, 3)
+    for i in 1:min(n, 10)
         fd = fetchfielddefn(featuredefn, i-1)
-        println(io, "  Field    (index $(i-1)): $(getname(fd)) ($(_fieldtype[gettype(fd)]))")
+        println(io, "     Field (index $(i-1)): $(getname(fd)) ($(_fieldtype[gettype(fd)]))")
     end
-    n > 3 && print(io, "...\n Number of Fields: $n")
+    n > 10 && print(io, "...\n Number of Fields: $n")
 end
 
 function Base.show(io::IO, feature::Feature)
@@ -101,11 +101,11 @@ function Base.show(io::IO, feature::Feature)
     end
     n > 3 && println(io, "...\n Number of geometries: $n")
     n = nfield(feature)
-    for i in 1:n
+    for i in 1:min(n, 10)
         print(io, "  (index $(i-1)) $(getname(fetchfielddefn(feature, i-1))) => ")
         println("$(fetchfield(feature, i-1))")
     end
-    n > 3 && print(io, "...\n Number of Fields: $n")
+    n > 10 && print(io, "...\n Number of Fields: $n")
 end
 
 function Base.show(io::IO, spref::SpatialRef)
