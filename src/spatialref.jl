@@ -319,10 +319,15 @@ function toWKT(spref::SpatialRef)
 end
 
 """
-    OSRExportToPrettyWkt(OGRSpatialReferenceH hSRS,
-                         char ** ppszReturn,
-                         int bSimplify) -> OGRErr
 Convert this SRS into a nicely formatted WKT string for display to a person.
+
+Note that the returned WKT string should be freed with OGRFree() or CPLFree() when no longer needed. It is the responsibility of the caller.
+
+Parameters
+ppszResult  the resulting string is returned in this pointer.
+bSimplify   TRUE if the AXIS, AUTHORITY and EXTENSION nodes should be stripped off.
+Returns
+currently OGRERR_NONE is always returned, but the future it is possible error conditions will develop.
 """
 function toWKT(spref::SpatialRef, simplify::Bool)
     wktptr = Ref{Cstring}()
