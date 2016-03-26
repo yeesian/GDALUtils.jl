@@ -44,8 +44,6 @@ end
 # Including 0: 47.55674749653172
 #   0.250603 seconds (154.79 k allocations: 90.796 MB, 31.42% gc time)
 
-import GDALUtils; const GU = GDALUtils
-
 # version 2
 @time GU.read("ospy/data4/aster.img") do ds
     # get image size
