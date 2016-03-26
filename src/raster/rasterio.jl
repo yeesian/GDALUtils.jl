@@ -228,23 +228,23 @@ end
 function fetch!{T <: Real}(dataset::Dataset,
                            buffer::Array{T,2},
                            i::Integer,
-                           width::Integer,
-                           height::Integer,
+                           _width::Integer,
+                           _height::Integer,
                            xoffset::Integer,
                            yoffset::Integer)
     checknull(dataset) && error("Can't read closed dataset")
-    rasterio!(fetchband(dataset, i), buffer, width, height, xoffset, yoffset)
+    rasterio!(fetchband(dataset, i), buffer, _width, _height, xoffset, yoffset)
 end
 
 function fetch!{T <: Real}(dataset::Dataset,
                        buffer::Array{T,3},
                        indices::Vector{Cint},
-                       width::Integer,
-                       height::Integer,
+                       _width::Integer,
+                       _height::Integer,
                        xoffset::Integer,
                        yoffset::Integer)
     checknull(dataset) && error("Can't read closed dataset")
-    rasterio!(dataset, buffer, indices, width, height, xoffset, yoffset)
+    rasterio!(dataset, buffer, indices, _width, _height, xoffset, yoffset)
 end
 
 function fetch!{T <: Real, U <: Integer}(dataset::Dataset,
@@ -253,7 +253,7 @@ function fetch!{T <: Real, U <: Integer}(dataset::Dataset,
                                          rows::UnitRange{U},
                                          cols::UnitRange{U})
     checknull(dataset) && error("Can't read closed dataset")
-    rasterio!(fetchband(dataset, i), buffer, width, rows, cols)
+    rasterio!(fetchband(dataset, i), buffer, rows, cols)
 end
 
 function fetch!{T <: Real, U <: Integer}(dataset::Dataset,
@@ -288,26 +288,26 @@ end
 
 function fetch(dataset::Dataset,
                i::Integer,
-               width::Integer,
-               height::Integer,
+               _width::Integer,
+               _height::Integer,
                xoffset::Integer,
                yoffset::Integer)
     checknull(dataset) && error("Can't read closed dataset")
     band = fetchband(dataset, i)
     buffer = Array(getdatatype(band), width(band), height(band))
-    rasterio!(band, buffer, width, height, xoffset, yoffset)
+    rasterio!(band, buffer, _width, _height, xoffset, yoffset)
 end
 
 function fetch{T <: Integer}(dataset::Dataset,
                              indices::Vector{T},
-                             width::Integer,
-                             height::Integer,
+                             _width::Integer,
+                             _height::Integer,
                              xoffset::Integer,
                              yoffset::Integer)
     checknull(dataset) && error("Can't read closed dataset")
     buffer = Array(getdatatype(fetchband(dataset, indices[1])),
                    width(dataset), height(dataset), length(indices))
-    rasterio!(dataset, buffer, indices, width, height, xoffset, yoffset)
+    rasterio!(dataset, buffer, indices, _width, _height, xoffset, yoffset)
 end
 
 function fetch{U <: Integer}(dataset::Dataset,
@@ -345,24 +345,24 @@ end
 function update!{T <: Real}(dataset::Dataset,
                             buffer::Array{T,2},
                             i::Integer,
-                            width::Integer,
-                            height::Integer,
+                            _width::Integer,
+                            _height::Integer,
                             xoffset::Integer,
                             yoffset::Integer)
     checknull(dataset) && error("Can't write closed dataset")
-    rasterio!(fetchband(dataset, i), buffer, width, height,
+    rasterio!(fetchband(dataset, i), buffer, _width, _height,
               xoffset, yoffset, GDAL.GF_Write)
 end
 
 function update!{T <: Real}(dataset::Dataset,
                             buffer::Array{T,3},
                             indices::Vector{Cint},
-                            width::Integer,
-                            height::Integer,
+                            _width::Integer,
+                            _height::Integer,
                             xoffset::Integer,
                             yoffset::Integer)
     checknull(dataset) && error("Can't write closed dataset")
-    rasterio!(dataset, buffer, indices, width, height,
+    rasterio!(dataset, buffer, indices, _width, _height,
               xoffset, yoffset, GDAL.GF_Write)
 end
 
