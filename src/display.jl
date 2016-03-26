@@ -107,3 +107,8 @@ function Base.show(io::IO, feature::Feature)
     end
     n > 3 && print(io, "...\n Number of Fields: $n")
 end
+
+function Base.show(io::IO, spref::SpatialRef)
+    println(io, "Spatial Reference System")
+    print(io, "$(toWKT(spref, true))")
+end

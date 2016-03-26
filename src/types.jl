@@ -26,6 +26,10 @@ type SpatialRef
     ptr::Ptr{GDAL.OGRSpatialReferenceH}
 end
 
+type CoordTransform
+    ptr::Ptr{GDAL.OGRCoordinateTransformationH}
+end
+
 type Driver{T}
     ptr::Ptr{T}
 end

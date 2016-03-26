@@ -478,26 +478,32 @@ setspatialref(geom::Geometry, spatialref::SpatialRef) =
 "Returns spatial reference system for geometry."
 getspatialref(geom::Geometry) = SpatialRef(GDAL.getspatialreference(geom.ptr))
 
-# """
-#     OGR_G_Transform(OGRGeometryH hGeom,
-#                     OGRCoordinateTransformationH hTransform) -> OGRErr
-# Apply arbitrary coordinate transformation to geometry.
-# ### Parameters
-# * **hGeom**: handle on the geometry to apply the transform to.
-# * **hTransform**: handle on the transformation to apply.
-# ### Returns
-# OGRERR_NONE on success or an error code.
-# """
-# function transform(arg1::Ptr{OGRGeometryH},arg2::Ptr{OGRCoordinateTransformationH})
-#     ccall((:OGR_G_Transform,libgdal),OGRErr,(Ptr{OGRGeometryH},Ptr{OGRCoordinateTransformationH}),arg1,arg2)
-# end
+"""
+    OGR_G_Transform(OGRGeometryH hGeom,
+                    OGRCoordinateTransformationH hTransform) -> OGRErr
+Apply arbitrary coordinate transformation to geometry.
+
+### Parameters
+* **hGeom**: handle on the geometry to apply the transform to.
+* **hTransform**: handle on the transformation to apply.
+
+### Returns
+OGRERR_NONE on success or an error code.
+"""
+function transform(geom::Geometry, coordtransform::CoordTransform)
+    result = GDAL.transform(geom.ptr, coordtransform.ptr)
+    if result != GDAL.OGRERR_NONE
+        error("Failed to transform geometry")
+    end
+    geom
+end
 
 
 "Transform geometry to new spatial reference system."
 function transformto(geom::Geometry, spatialref::SpatialRef)
     result = GDAL.transformto(geom.ptr, spatialref.ptr)
     if result != GDAL.OGRERR_NONE
-        error("Failed to transform geoemtry to the new SRS")
+        error("Failed to transform geometry to the new SRS")
     end
 end
 
