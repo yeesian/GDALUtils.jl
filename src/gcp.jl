@@ -1,14 +1,27 @@
-# function GDALInitGCPs(arg1::Integer,arg2::Ptr{GDAL_GCP})
+# """
+#     GDALInitGCPs(int,
+#                  GDAL_GCP *) -> void
+# """
+# function initgcps(arg1::Integer,arg2)
 #     ccall((:GDALInitGCPs,libgdal),Void,(Cint,Ptr{GDAL_GCP}),arg1,arg2)
 # end
 
-# function GDALDeinitGCPs(arg1::Integer,arg2::Ptr{GDAL_GCP})
+
+# """
+#     GDALDeinitGCPs(int,
+#                    GDAL_GCP *) -> void
+# """
+# function deinitgcps(arg1::Integer,arg2)
 #     ccall((:GDALDeinitGCPs,libgdal),Void,(Cint,Ptr{GDAL_GCP}),arg1,arg2)
 # end
 
-# function GDALDuplicateGCPs(arg1::Integer,arg2::Ptr{GDAL_GCP})
-#     ccall((:GDALDuplicateGCPs,libgdal),Ptr{GDAL_GCP},(Cint,Ptr{GDAL_GCP}),
-#           arg1,arg2)
+
+# """
+#     GDALDuplicateGCPs(int,
+#                       const GDAL_GCP *) -> GDAL_GCP *
+# """
+# function duplicategcps(arg1::Integer,arg2)
+#     ccall((:GDALDuplicateGCPs,libgdal),Ptr{GDAL_GCP},(Cint,Ptr{GDAL_GCP}),arg1,arg2)
 # end
 
 # """

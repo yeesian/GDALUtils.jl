@@ -108,6 +108,29 @@ function rasterio!{T <: Real, U <: Integer}(
               nPixelSpace, nLineSpace, nBandSpace)
 end
 
+# """
+#     GDALDatasetRasterIOEx(GDALDatasetH hDS,
+#                           GDALRWFlag eRWFlag,
+#                           int nXOff,
+#                           int nYOff,
+#                           int nXSize,
+#                           int nYSize,
+#                           void * pData,
+#                           int nBufXSize,
+#                           int nBufYSize,
+#                           GDALDataType eBufType,
+#                           int nBandCount,
+#                           int * panBandMap,
+#                           GSpacing nPixelSpace,
+#                           GSpacing nLineSpace,
+#                           GSpacing nBandSpace,
+#                           GDALRasterIOExtraArg * psExtraArg) -> CPLErr
+# Read/write a region of image data from multiple bands.
+# """
+# function datasetrasterioex{T <: GDALDatasetH}(hDS::Ptr{T},eRWFlag::GDALRWFlag,nDSXOff::Integer,nDSYOff::Integer,nDSXSize::Integer,nDSYSize::Integer,pBuffer,nBXSize::Integer,nBYSize::Integer,eBDataType::GDALDataType,nBandCount::Integer,panBandCount,nPixelSpace::GSpacing,nLineSpace::GSpacing,nBandSpace::GSpacing,psExtraArg)
+#     ccall((:GDALDatasetRasterIOEx,libgdal),CPLErr,(Ptr{GDALDatasetH},GDALRWFlag,Cint,Cint,Cint,Cint,Ptr{Void},Cint,Cint,GDALDataType,Cint,Ptr{Cint},GSpacing,GSpacing,GSpacing,Ptr{GDALRasterIOExtraArg}),hDS,eRWFlag,nDSXOff,nDSYOff,nDSXSize,nDSYSize,pBuffer,nBXSize,nBYSize,eBDataType,nBandCount,panBandCount,nPixelSpace,nLineSpace,nBandSpace,psExtraArg)
+# end
+
 """
 Read/write a region of image data for this band.
 
@@ -205,6 +228,26 @@ function rasterio!{T <: Real, U <: Integer}(rasterband::RasterBand,
     rasterio!(rasterband, buffer, _width, _height, cols[1], rows[1], access,
               nPixelSpace, nLineSpace)
 end
+
+# """
+#     GDALRasterIOEx(GDALRasterBandH hBand,
+#                    GDALRWFlag eRWFlag,
+#                    int nXOff,
+#                    int nYOff,
+#                    int nXSize,
+#                    int nYSize,
+#                    void * pData,
+#                    int nBufXSize,
+#                    int nBufYSize,
+#                    GDALDataType eBufType,
+#                    GSpacing nPixelSpace,
+#                    GSpacing nLineSpace,
+#                    GDALRasterIOExtraArg * psExtraArg) -> CPLErr
+# Read/write a region of image data for this band.
+# """
+# function rasterioex{T <: GDALRasterBandH}(hRBand::Ptr{T},eRWFlag::GDALRWFlag,nDSXOff::Integer,nDSYOff::Integer,nDSXSize::Integer,nDSYSize::Integer,pBuffer,nBXSize::Integer,nBYSize::Integer,eBDataType::GDALDataType,nPixelSpace::GSpacing,nLineSpace::GSpacing,psExtraArg)
+#     ccall((:GDALRasterIOEx,libgdal),CPLErr,(Ptr{GDALRasterBandH},GDALRWFlag,Cint,Cint,Cint,Cint,Ptr{Void},Cint,Cint,GDALDataType,GSpacing,GSpacing,Ptr{GDALRasterIOExtraArg}),hRBand,eRWFlag,nDSXOff,nDSYOff,nDSXSize,nDSYSize,pBuffer,nBXSize,nBYSize,eBDataType,nPixelSpace,nLineSpace,psExtraArg)
+# end
 
 function fetch!{T <: Real}(dataset::Dataset, buffer::Array{T,2}, i::Integer)
     checknull(dataset) && error("Can't read closed dataset")

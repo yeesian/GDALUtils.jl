@@ -126,6 +126,267 @@ function setnodatavalue(rasterband::RasterBand, value::Real)
     (result == GDAL.CE_Failure) && error("Could not set nodatavalue")
 end
 
+# """
+#     GDALDeleteRasterNoDataValue(GDALRasterBandH hBand) -> CPLErr
+# Remove the no data value for this band.
+# """
+# function deleterasternodatavalue{T <: GDALRasterBandH}(arg1::Ptr{T})
+#     ccall((:GDALDeleteRasterNoDataValue,libgdal),CPLErr,(Ptr{GDALRasterBandH},),arg1)
+# end
+
+
+# """
+#     GDALGetRasterCategoryNames(GDALRasterBandH hBand) -> char **
+# Fetch the list of category names for this raster.
+# """
+# function getrastercategorynames{T <: GDALRasterBandH}(arg1::Ptr{T})
+#     bytestring(unsafe_load(ccall((:GDALGetRasterCategoryNames,libgdal),Ptr{Cstring},(Ptr{GDALRasterBandH},),arg1)))
+# end
+
+
+# """
+#     GDALSetRasterCategoryNames(GDALRasterBandH hBand,
+#                                char ** papszNames) -> CPLErr
+# Set the category names for this band.
+# """
+# function setrastercategorynames{T <: GDALRasterBandH}(arg1::Ptr{T},arg2)
+#     ccall((:GDALSetRasterCategoryNames,libgdal),CPLErr,(Ptr{GDALRasterBandH},Ptr{Cstring}),arg1,arg2)
+# end
+
+
+# """
+#     GDALGetRasterMinimum(GDALRasterBandH hBand,
+#                          int * pbSuccess) -> double
+# Fetch the minimum value for this band.
+# """
+# function getrasterminimum{T <: GDALRasterBandH}(arg1::Ptr{T},pbSuccess)
+#     ccall((:GDALGetRasterMinimum,libgdal),Cdouble,(Ptr{GDALRasterBandH},Ptr{Cint}),arg1,pbSuccess)
+# end
+
+
+# """
+#     GDALGetRasterMaximum(GDALRasterBandH hBand,
+#                          int * pbSuccess) -> double
+# Fetch the maximum value for this band.
+# """
+# function getrastermaximum{T <: GDALRasterBandH}(arg1::Ptr{T},pbSuccess)
+#     ccall((:GDALGetRasterMaximum,libgdal),Cdouble,(Ptr{GDALRasterBandH},Ptr{Cint}),arg1,pbSuccess)
+# end
+
+
+# """
+#     GDALGetRasterStatistics(GDALRasterBandH hBand,
+#                             int bApproxOK,
+#                             int bForce,
+#                             double * pdfMin,
+#                             double * pdfMax,
+#                             double * pdfMean,
+#                             double * pdfStdDev) -> CPLErr
+# Fetch image statistics.
+# """
+# function getrasterstatistics{T <: GDALRasterBandH}(arg1::Ptr{T},bApproxOK::Integer,bForce::Integer,pdfMin,pdfMax,pdfMean,pdfStdDev)
+#     ccall((:GDALGetRasterStatistics,libgdal),CPLErr,(Ptr{GDALRasterBandH},Cint,Cint,Ptr{Cdouble},Ptr{Cdouble},Ptr{Cdouble},Ptr{Cdouble}),arg1,bApproxOK,bForce,pdfMin,pdfMax,pdfMean,pdfStdDev)
+# end
+
+
+# """
+#     GDALComputeRasterStatistics(GDALRasterBandH hBand,
+#                                 int bApproxOK,
+#                                 double * pdfMin,
+#                                 double * pdfMax,
+#                                 double * pdfMean,
+#                                 double * pdfStdDev,
+#                                 GDALProgressFunc pfnProgress,
+#                                 void * pProgressData) -> CPLErr
+# Compute image statistics.
+# """
+# function computerasterstatistics{T <: GDALRasterBandH}(arg1::Ptr{T},bApproxOK::Integer,pdfMin,pdfMax,pdfMean,pdfStdDev,pfnProgress::Ptr{GDALProgressFunc},pProgressData)
+#     ccall((:GDALComputeRasterStatistics,libgdal),CPLErr,(Ptr{GDALRasterBandH},Cint,Ptr{Cdouble},Ptr{Cdouble},Ptr{Cdouble},Ptr{Cdouble},Ptr{GDALProgressFunc},Ptr{Void}),arg1,bApproxOK,pdfMin,pdfMax,pdfMean,pdfStdDev,pfnProgress,pProgressData)
+# end
+
+
+# """
+#     GDALSetRasterStatistics(GDALRasterBandH hBand,
+#                             double dfMin,
+#                             double dfMax,
+#                             double dfMean,
+#                             double dfStdDev) -> CPLErr
+# Set statistics on band.
+# """
+# function setrasterstatistics{T <: GDALRasterBandH}(hBand::Ptr{T},dfMin::Real,dfMax::Real,dfMean::Real,dfStdDev::Real)
+#     ccall((:GDALSetRasterStatistics,libgdal),CPLErr,(Ptr{GDALRasterBandH},Cdouble,Cdouble,Cdouble,Cdouble),hBand,dfMin,dfMax,dfMean,dfStdDev)
+# end
+
+# """
+#     GDALComputeRasterMinMax(GDALRasterBandH hBand,
+#                             int bApproxOK,
+#                             double adfMinMax) -> void
+# Compute the min/max values for a band.
+# """
+# function computerasterminmax{T <: GDALRasterBandH}(hBand::Ptr{T},bApproxOK::Integer,adfMinMax::Array_2_Cdouble)
+#     ccall((:GDALComputeRasterMinMax,libgdal),Void,(Ptr{GDALRasterBandH},Cint,Array_2_Cdouble),hBand,bApproxOK,adfMinMax)
+# end
+
+# """
+#     GDALGetRasterHistogram(GDALRasterBandH hBand,
+#                            double dfMin,
+#                            double dfMax,
+#                            int nBuckets,
+#                            int * panHistogram,
+#                            int bIncludeOutOfRange,
+#                            int bApproxOK,
+#                            GDALProgressFunc pfnProgress,
+#                            void * pProgressData) -> CPLErr
+# Compute raster histogram.
+# """
+# function getrasterhistogram{T <: GDALRasterBandH}(hBand::Ptr{T},dfMin::Real,dfMax::Real,nBuckets::Integer,panHistogram,bIncludeOutOfRange::Integer,bApproxOK::Integer,pfnProgress::Ptr{GDALProgressFunc},pProgressData)
+#     ccall((:GDALGetRasterHistogram,libgdal),CPLErr,(Ptr{GDALRasterBandH},Cdouble,Cdouble,Cint,Ptr{Cint},Cint,Cint,Ptr{GDALProgressFunc},Ptr{Void}),hBand,dfMin,dfMax,nBuckets,panHistogram,bIncludeOutOfRange,bApproxOK,pfnProgress,pProgressData)
+# end
+
+
+# """
+#     GDALGetRasterHistogramEx(GDALRasterBandH hBand,
+#                              double dfMin,
+#                              double dfMax,
+#                              int nBuckets,
+#                              GUIntBig * panHistogram,
+#                              int bIncludeOutOfRange,
+#                              int bApproxOK,
+#                              GDALProgressFunc pfnProgress,
+#                              void * pProgressData) -> CPLErr
+# Compute raster histogram.
+# """
+# function getrasterhistogramex{T <: GDALRasterBandH}(hBand::Ptr{T},dfMin::Real,dfMax::Real,nBuckets::Integer,panHistogram,bIncludeOutOfRange::Integer,bApproxOK::Integer,pfnProgress::Ptr{GDALProgressFunc},pProgressData)
+#     ccall((:GDALGetRasterHistogramEx,libgdal),CPLErr,(Ptr{GDALRasterBandH},Cdouble,Cdouble,Cint,Ptr{GUIntBig},Cint,Cint,Ptr{GDALProgressFunc},Ptr{Void}),hBand,dfMin,dfMax,nBuckets,panHistogram,bIncludeOutOfRange,bApproxOK,pfnProgress,pProgressData)
+# end
+
+
+# """
+#     GDALGetDefaultHistogram(GDALRasterBandH hBand,
+#                             double * pdfMin,
+#                             double * pdfMax,
+#                             int * pnBuckets,
+#                             int ** ppanHistogram,
+#                             int bForce,
+#                             GDALProgressFunc pfnProgress,
+#                             void * pProgressData) -> CPLErr
+# Fetch default raster histogram.
+# """
+# function getdefaulthistogram{T <: GDALRasterBandH}(hBand::Ptr{T},pdfMin,pdfMax,pnBuckets,ppanHistogram,bForce::Integer,pfnProgress::Ptr{GDALProgressFunc},pProgressData)
+#     ccall((:GDALGetDefaultHistogram,libgdal),CPLErr,(Ptr{GDALRasterBandH},Ptr{Cdouble},Ptr{Cdouble},Ptr{Cint},Ptr{Ptr{Cint}},Cint,Ptr{GDALProgressFunc},Ptr{Void}),hBand,pdfMin,pdfMax,pnBuckets,ppanHistogram,bForce,pfnProgress,pProgressData)
+# end
+
+
+# """
+#     GDALGetDefaultHistogramEx(GDALRasterBandH hBand,
+#                               double * pdfMin,
+#                               double * pdfMax,
+#                               int * pnBuckets,
+#                               GUIntBig ** ppanHistogram,
+#                               int bForce,
+#                               GDALProgressFunc pfnProgress,
+#                               void * pProgressData) -> CPLErr
+# Fetch default raster histogram.
+# """
+# function getdefaulthistogramex{T <: GDALRasterBandH}(hBand::Ptr{T},pdfMin,pdfMax,pnBuckets,ppanHistogram,bForce::Integer,pfnProgress::Ptr{GDALProgressFunc},pProgressData)
+#     ccall((:GDALGetDefaultHistogramEx,libgdal),CPLErr,(Ptr{GDALRasterBandH},Ptr{Cdouble},Ptr{Cdouble},Ptr{Cint},Ptr{Ptr{GUIntBig}},Cint,Ptr{GDALProgressFunc},Ptr{Void}),hBand,pdfMin,pdfMax,pnBuckets,ppanHistogram,bForce,pfnProgress,pProgressData)
+# end
+
+
+# """
+#     GDALSetDefaultHistogram(GDALRasterBandH hBand,
+#                             double dfMin,
+#                             double dfMax,
+#                             int nBuckets,
+#                             int * panHistogram) -> CPLErr
+# Set default histogram.
+# """
+# function setdefaulthistogram{T <: GDALRasterBandH}(hBand::Ptr{T},dfMin::Real,dfMax::Real,nBuckets::Integer,panHistogram)
+#     ccall((:GDALSetDefaultHistogram,libgdal),CPLErr,(Ptr{GDALRasterBandH},Cdouble,Cdouble,Cint,Ptr{Cint}),hBand,dfMin,dfMax,nBuckets,panHistogram)
+# end
+
+
+# """
+#     GDALSetDefaultHistogramEx(GDALRasterBandH hBand,
+#                               double dfMin,
+#                               double dfMax,
+#                               int nBuckets,
+#                               GUIntBig * panHistogram) -> CPLErr
+# Set default histogram.
+# """
+# function setdefaulthistogramex{T <: GDALRasterBandH}(hBand::Ptr{T},dfMin::Real,dfMax::Real,nBuckets::Integer,panHistogram)
+#     ccall((:GDALSetDefaultHistogramEx,libgdal),CPLErr,(Ptr{GDALRasterBandH},Cdouble,Cdouble,Cint,Ptr{GUIntBig}),hBand,dfMin,dfMax,nBuckets,panHistogram)
+# end
+
+
+# """
+#     GDALGetRandomRasterSample(GDALRasterBandH,
+#                               int,
+#                               float *) -> int
+# """
+# function getrandomrastersample{T <: GDALRasterBandH}(arg1::Ptr{T},arg2::Integer,arg3)
+#     ccall((:GDALGetRandomRasterSample,libgdal),Cint,(Ptr{GDALRasterBandH},Cint,Ptr{Cfloat}),arg1,arg2,arg3)
+# end
+
+# """
+#     GDALComputeBandStats(GDALRasterBandH hBand,
+#                          int nSampleStep,
+#                          double * pdfMean,
+#                          double * pdfStdDev,
+#                          GDALProgressFunc pfnProgress,
+#                          void * pProgressData) -> CPLErr
+# """
+# function computebandstats{T <: GDALRasterBandH}(hBand::Ptr{T},nSampleStep::Integer,pdfMean,pdfStdDev,pfnProgress::Ptr{GDALProgressFunc},pProgressData)
+#     ccall((:GDALComputeBandStats,libgdal),CPLErr,(Ptr{GDALRasterBandH},Cint,Ptr{Cdouble},Ptr{Cdouble},Ptr{GDALProgressFunc},Ptr{Void}),hBand,nSampleStep,pdfMean,pdfStdDev,pfnProgress,pProgressData)
+# end
+
+
+# """
+#     GDALOverviewMagnitudeCorrection(GDALRasterBandH hBaseBand,
+#                                     int nOverviewCount,
+#                                     GDALRasterBandH * pahOverviews,
+#                                     GDALProgressFunc pfnProgress,
+#                                     void * pProgressData) -> CPLErr
+# """
+# function overviewmagnitudecorrection{T <: GDALRasterBandH}(hBaseBand::Ptr{T},nOverviewCount::Integer,pahOverviews,pfnProgress::Ptr{GDALProgressFunc},pProgressData)
+#     ccall((:GDALOverviewMagnitudeCorrection,libgdal),CPLErr,(Ptr{GDALRasterBandH},Cint,Ptr{GDALRasterBandH},Ptr{GDALProgressFunc},Ptr{Void}),hBaseBand,nOverviewCount,pahOverviews,pfnProgress,pProgressData)
+# end
+
+
+# """
+#     GDALGetDefaultRAT(GDALRasterBandH hBand) -> GDALRasterAttributeTableH
+# Fetch default Raster Attribute Table.
+# """
+# function getdefaultrat{T <: GDALRasterBandH}(hBand::Ptr{T})
+#     checknull(ccall((:GDALGetDefaultRAT,libgdal),Ptr{GDALRasterAttributeTableH},(Ptr{GDALRasterBandH},),hBand))
+# end
+
+
+# """
+#     GDALSetDefaultRAT(GDALRasterBandH hBand,
+#                       GDALRasterAttributeTableH hRAT) -> CPLErr
+# Set default Raster Attribute Table.
+# """
+# function setdefaultrat{T <: GDALRasterBandH}(arg1::Ptr{T},arg2::Ptr{GDALRasterAttributeTableH})
+#     ccall((:GDALSetDefaultRAT,libgdal),CPLErr,(Ptr{GDALRasterBandH},Ptr{GDALRasterAttributeTableH}),arg1,arg2)
+# end
+
+
+# """
+#     GDALAddDerivedBandPixelFunc(const char * pszName,
+#                                 GDALDerivedPixelFunc pfnPixelFunc) -> CPLErr
+# This adds a pixel function to the global list of available pixel functions for derived bands.
+# ### Parameters
+# * **pszFuncName**: Name used to access pixel function
+# * **pfnNewFunction**: Pixel function associated with name. An existing pixel function registered with the same name will be replaced with the new one.
+# ### Returns
+# CE_None, invalid (NULL) parameters are currently ignored.
+# """
+# function addderivedbandpixelfunc(pszName,pfnPixelFunc::Ptr{GDALDerivedPixelFunc})
+#     ccall((:GDALAddDerivedBandPixelFunc,libgdal),CPLErr,(Cstring,Ptr{GDALDerivedPixelFunc}),pszName,pfnPixelFunc)
+# end
+
+
 """
 Copy all raster band raster data.
 
@@ -180,6 +441,14 @@ have enough samples.
 getsampleoverview(rasterband::RasterBand, nsamples::Integer) =
     RasterBand(GDAL.getrastersampleoverview(rasterband.ptr, nsamples))
 
+# """
+#     GDALGetRasterSampleOverviewEx(GDALRasterBandH hBand,
+#                                   GUIntBig nDesiredSamples) -> GDALRasterBandH
+# Fetch best sampling overview.
+# """
+# function getrastersampleoverviewex{T <: GDALRasterBandH}(arg1::Ptr{T},arg2::GUIntBig)
+#     checknull(ccall((:GDALGetRasterSampleOverviewEx,libgdal),Ptr{GDALRasterBandH},(Ptr{GDALRasterBandH},GUIntBig),arg1,arg2))
+# end
 
 "Color Interpretation value for band"
 getcolorinterp(rasterband::RasterBand) =

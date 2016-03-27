@@ -1,4 +1,22 @@
 
+# """
+#     GDALGetAccess(GDALDatasetH hDS) -> int
+# Return access flag.
+# """
+# function getaccess{T <: GDALDatasetH}(hDS::Ptr{T})
+#     ccall((:GDALGetAccess,libgdal),Cint,(Ptr{GDALDatasetH},),hDS)
+# end
+
+# """
+#     GDALFlushCache(GDALDatasetH hDS) -> void
+# Flush all write cached data to disk.
+# """
+# function flushcache{T <: GDALDatasetH}(hDS::Ptr{T})
+#     ccall((:GDALFlushCache,libgdal),Void,(Ptr{GDALDatasetH},),hDS)
+# end
+
+
+
 """
 Close GDAL dataset.
 
@@ -464,7 +482,7 @@ end
 # ### Returns
 # a pointer to an array of dataset handles.
 # """
-# opendatasets(hDS::Ptr{Ptr{GDALDatasetH}}, pnCount::Ptr{Cint}) = 
+# getopendatasets(hDS::Ptr{Ptr{GDALDatasetH}}, pnCount::Ptr{Cint}) = 
 #     GDALGetOpenDatasets(hdS, pnCount)
 
 """
@@ -539,3 +557,96 @@ getgcpproj(dataset::Dataset) = GDAL.getgcpprojection(dataset.ptr)
 #          pasGCPList::Ptr{GDAL_GCP},
 #          pszGCPProjection::Ptr{UInt8}) =
 #     GDALSetGCPs(dataset, nGCPCount, pasGCPList, pszGCPProjection)::CPLErr
+
+# """
+#     GDALDatasetAdviseRead(GDALDatasetH hDS,
+#                           int nXOff,
+#                           int nYOff,
+#                           int nXSize,
+#                           int nYSize,
+#                           int nBufXSize,
+#                           int nBufYSize,
+#                           GDALDataType eDT,
+#                           int nBandCount,
+#                           int * panBandMap,
+#                           char ** papszOptions) -> CPLErr
+# Advise driver of upcoming read requests.
+# """
+# function datasetadviseread{T <: GDALDatasetH}(hDS::Ptr{T},nDSXOff::Integer,nDSYOff::Integer,nDSXSize::Integer,nDSYSize::Integer,nBXSize::Integer,nBYSize::Integer,eBDataType::GDALDataType,nBandCount::Integer,panBandCount,papszOptions)
+#     ccall((:GDALDatasetAdviseRead,libgdal),CPLErr,(Ptr{GDALDatasetH},Cint,Cint,Cint,Cint,Cint,Cint,GDALDataType,Cint,Ptr{Cint},Ptr{Cstring}),hDS,nDSXOff,nDSYOff,nDSXSize,nDSYSize,nBXSize,nBYSize,eBDataType,nBandCount,panBandCount,papszOptions)
+# end
+
+# """
+#     GDALDatasetGetStyleTable(GDALDatasetH hDS) -> OGRStyleTableH
+# Returns dataset style table.
+# ### Parameters
+# * **hDS**: the dataset handle
+# ### Returns
+# handle to a style table which should not be modified or freed by the caller.
+# """
+# function datasetgetstyletable{T <: GDALDatasetH}(arg1::Ptr{T})
+#     checknull(ccall((:GDALDatasetGetStyleTable,libgdal),Ptr{OGRStyleTableH},(Ptr{GDALDatasetH},),arg1))
+# end
+
+
+# """
+#     GDALDatasetSetStyleTableDirectly(GDALDatasetH hDS,
+#                                      OGRStyleTableH hStyleTable) -> void
+# Set dataset style table.
+# ### Parameters
+# * **hDS**: the dataset handle
+# * **hStyleTable**: style table handle to set
+# """
+# function datasetsetstyletabledirectly{T <: GDALDatasetH}(arg1::Ptr{T},arg2::Ptr{OGRStyleTableH})
+#     ccall((:GDALDatasetSetStyleTableDirectly,libgdal),Void,(Ptr{GDALDatasetH},Ptr{OGRStyleTableH}),arg1,arg2)
+# end
+
+
+# """
+#     GDALDatasetSetStyleTable(GDALDatasetH hDS,
+#                              OGRStyleTableH hStyleTable) -> void
+# Set dataset style table.
+# ### Parameters
+# * **hDS**: the dataset handle
+# * **hStyleTable**: style table handle to set
+# """
+# function datasetsetstyletable{T <: GDALDatasetH}(arg1::Ptr{T},arg2::Ptr{OGRStyleTableH})
+#     ccall((:GDALDatasetSetStyleTable,libgdal),Void,(Ptr{GDALDatasetH},Ptr{OGRStyleTableH}),arg1,arg2)
+# end
+
+
+# """
+#     GDALDatasetStartTransaction(GDALDatasetH hDS,
+#                                 int bForce) -> OGRErr
+# For datasources which support transactions, StartTransaction creates a transaction.
+# ### Parameters
+# * **hDS**: the dataset handle.
+# * **bForce**: can be set to TRUE if an emulation, possibly slow, of a transaction mechanism is acceptable.
+# ### Returns
+# OGRERR_NONE on success.
+# """
+# function datasetstarttransaction{T <: GDALDatasetH}(hDS::Ptr{T},bForce::Integer)
+#     ccall((:GDALDatasetStartTransaction,libgdal),OGRErr,(Ptr{GDALDatasetH},Cint),hDS,bForce)
+# end
+
+
+# """
+#     GDALDatasetCommitTransaction(GDALDatasetH hDS) -> OGRErr
+# For datasources which support transactions, CommitTransaction commits a transaction.
+# ### Returns
+# OGRERR_NONE on success.
+# """
+# function datasetcommittransaction{T <: GDALDatasetH}(hDS::Ptr{T})
+#     ccall((:GDALDatasetCommitTransaction,libgdal),OGRErr,(Ptr{GDALDatasetH},),hDS)
+# end
+
+
+# """
+#     GDALDatasetRollbackTransaction(GDALDatasetH hDS) -> OGRErr
+# For datasources which support transactions, RollbackTransaction will roll back a datasource to its state before the start of the current transaction.
+# ### Returns
+# OGRERR_NONE on success.
+# """
+# function datasetrollbacktransaction{T <: GDALDatasetH}(hDS::Ptr{T})
+#     ccall((:GDALDatasetRollbackTransaction,libgdal),OGRErr,(Ptr{GDALDatasetH},),hDS)
+# end

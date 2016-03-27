@@ -119,8 +119,134 @@ const _geomname = Dict{GDAL.OGRwkbGeometryType, Symbol}(
 
 const _access = Dict{UInt32, Symbol}(0 => :ReadOnly, 1 => :Update)
 
+# """
+#     GDALGetDataTypeSize(GDALDataType) -> int
+# Get data type size in bits.
+# ### Parameters
+# * **eDataType**: type, such as GDT_Byte.
+# ### Returns
+# the number of bits or zero if it is not recognised.
+# """
+# function getdatatypesize(arg1::GDALDataType)
+#     ccall((:GDALGetDataTypeSize,libgdal),Cint,(GDALDataType,),arg1)
+# end
+
+# """
+#     GDALGetDataTypeName(GDALDataType) -> const char *
+# Get name of data type.
+# ### Parameters
+# * **eDataType**: type to get name of.
+# ### Returns
+# string corresponding to existing data type or NULL pointer if invalid type given.
+# """
+# function getdatatypename(arg1::GDALDataType)
+#     bytestring(ccall((:GDALGetDataTypeName,libgdal),Cstring,(GDALDataType,),arg1))
+# end
+
+# """
+#     GDALGetDataTypeByName(const char *) -> GDALDataType
+# Get data type by symbolic name.
+# ### Parameters
+# * **pszName**: string containing the symbolic name of the type.
+# ### Returns
+# GDAL data type.
+# """
+# function getdatatypebyname(arg1)
+#     ccall((:GDALGetDataTypeByName,libgdal),GDALDataType,(Cstring,),arg1)
+# end
+
+# """
+#     GDALDataTypeUnion(GDALDataType,
+#                       GDALDataType) -> GDALDataType
+# Return the smallest data type that can fully express both input data types.
+# ### Parameters
+# * **eType1**: first data type.
+# * **eType2**: second data type.
+# ### Returns
+# a data type able to express eType1 and eType2.
+# """
+# function datatypeunion(arg1::GDALDataType,arg2::GDALDataType)
+#     ccall((:GDALDataTypeUnion,libgdal),GDALDataType,(GDALDataType,GDALDataType),arg1,arg2)
+# end
+
+
+# """
+#     GDALAdjustValueToDataType(GDALDataType eDT,
+#                               double dfValue,
+#                               int * pbClamped,
+#                               int * pbRounded) -> double
+# Adjust a value to the output data type.
+# ### Parameters
+# * **eDT**: target data type.
+# * **dfValue**: value to adjust.
+# * **pbClamped**: pointer to a integer(boolean) to indicate if clamping has been made, or NULL
+# * **pbRounded**: pointer to a integer(boolean) to indicate if rounding has been made, or NULL
+# ### Returns
+# adjusted value
+# """
+# function adjustvaluetodatatype(eDT::GDALDataType,dfValue::Real,pbClamped,pbRounded)
+#     ccall((:GDALAdjustValueToDataType,libgdal),Cdouble,(GDALDataType,Cdouble,Ptr{Cint},Ptr{Cint}),eDT,dfValue,pbClamped,pbRounded)
+# end
+
 """
 `TRUE` if the passed type is complex (one of `GDT_CInt16`, `GDT_CInt32`,
 `GDT_CFloat32` or `GDT_CFloat64`)
 """
 iscomplex(dtype::GDAL.GDALDataType) = Bool(GDAL.datatypeiscomplex(dtype))
+
+# """
+#     GDALGetAsyncStatusTypeName(GDALAsyncStatusType) -> const char *
+# Get name of AsyncStatus data type.
+# ### Parameters
+# * **eAsyncStatusType**: type to get name of.
+# ### Returns
+# string corresponding to type.
+# """
+# function getasyncstatustypename(arg1::GDALAsyncStatusType)
+#     bytestring(ccall((:GDALGetAsyncStatusTypeName,libgdal),Cstring,(GDALAsyncStatusType,),arg1))
+# end
+
+
+# """
+#     GDALGetAsyncStatusTypeByName(const char *) -> GDALAsyncStatusType
+# Get AsyncStatusType by symbolic name.
+# ### Parameters
+# * **pszName**: string containing the symbolic name of the type.
+# ### Returns
+# GDAL AsyncStatus type.
+# """
+# function getasyncstatustypebyname(arg1)
+#     ccall((:GDALGetAsyncStatusTypeByName,libgdal),GDALAsyncStatusType,(Cstring,),arg1)
+# end
+
+
+"""
+Returns a symbolic name for the color interpretation.
+
+This is derived from the enumerated item name with the `GCI_` prefix removed,
+but there are some variations. So `GCI_GrayIndex` returns "Gray" and
+`GCI_RedBand` returns "Red". The returned strings are static strings and should
+not be modified or freed by the application.
+
+### Returns
+string corresponding to color interpretation or NULL pointer if invalid enumerator given.
+"""
+getcolorinterpname(color::GDAL.GDALColorInterp) =
+    GDAL.getcolorinterpretationname(color)
+
+# GDALGetColorInterpretationByName(const char * pszName) -> GDALColorInterp
+"Get color interpretation corresponding to the given symbolic name."
+getcolorinterp(name::AbstractString) = GDAL.getcolorinterpretationbyname(name)
+
+
+# """
+#     GDALGetPaletteInterpretationName(GDALPaletteInterp) -> const char *
+# Get name of palette interpretation.
+# ### Parameters
+# * **eInterp**: palette interpretation to get name of.
+# ### Returns
+# string corresponding to palette interpretation.
+# """
+# function getpaletteinterpretationname(arg1::GDALPaletteInterp)
+#     bytestring(ccall((:GDALGetPaletteInterpretationName,libgdal),Cstring,(GDALPaletteInterp,),arg1))
+# end

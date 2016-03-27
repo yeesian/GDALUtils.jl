@@ -126,6 +126,20 @@ Duplicate an existing layer.
 copylayer(dataset::Dataset,layer::FeatureLayer, name::AbstractString) =
     FeatureLayer(GDAL.datasetcopylayer(dataset.ptr, layer.ptr, name, C_NULL))
 
+# """
+#     GDALDatasetTestCapability(GDALDatasetH hDS,
+#                               const char * pszCap) -> int
+# Test if capability is available.
+# ### Parameters
+# * **hDS**: the dataset handle.
+# * **pszCap**: the capability to test.
+# ### Returns
+# TRUE if capability available otherwise FALSE.
+# """
+# function datasettestcapability{T <: GDALDatasetH}(arg1::Ptr{T},arg2)
+#     ccall((:GDALDatasetTestCapability,libgdal),Cint,(Ptr{GDALDatasetH},Cstring),arg1,arg2)
+# end
+
 """
 Execute an SQL statement against the data store.
 
