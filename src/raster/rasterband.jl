@@ -219,40 +219,42 @@ setcolortable(rasterband::RasterBand, colortable::Ptr{GDAL.GDALColorTableH}) =
 clearcolortable(rasterband::RasterBand) =
     GDAL.setrastercolortable(rasterband.ptr, C_NULL)
 
-# """
-# Generate downsampled overviews.
+"""
+Generate downsampled overviews.
 
-# This function will generate one or more overview images from a base image using
-# the requested downsampling algorithm. Its primary use is for generating
-# overviews via BuildOverviews(), but it can also be used to generate downsampled
-# images in one file from another outside the overview architecture.
+This function will generate one or more overview images from a base image using
+the requested downsampling algorithm. Its primary use is for generating
+overviews via BuildOverviews(), but it can also be used to generate downsampled
+images in one file from another outside the overview architecture.
 
-# The output bands need to exist in advance.
+The output bands need to exist in advance.
 
-# This function will honour properly `NODATA_VALUES` tuples (special dataset
-# metadata) so that only a given RGB triplet (in case of a RGB image) will be
-# considered as the nodata value and not each value of the triplet independantly
-# per band.
+This function will honour properly `NODATA_VALUES` tuples (special dataset
+metadata) so that only a given RGB triplet (in case of a RGB image) will be
+considered as the nodata value and not each value of the triplet independantly
+per band.
 
-# ### Parameters
-# * `hSrcBand`        the source (base level) band.
-# * `nOverviewCount`  the number of downsampled bands being generated.
-# * `pahOvrBands`     the list of downsampled bands to be generated.
-# * `pszResampling`   Resampling algorithm (eg. "AVERAGE").
-# * `pfnProgress`     progress report function.
-# * `pProgressData`   progress function callback data.
+### Parameters
+* `hSrcBand`        the source (base level) band.
+* `nOverviewCount`  the number of downsampled bands being generated.
+* `pahOvrBands`     the list of downsampled bands to be generated.
+* `pszResampling`   Resampling algorithm (eg. "AVERAGE").
+* `pfnProgress`     progress report function.
+* `pProgressData`   progress function callback data.
 
-# ### Returns
-# `CE_None` on success or `CE_Failure` on failure.
-# """
-# _regenerateoverviews(hSrcBand::GDALRasterBandH,
-#                      nOverviewCount::Integer,
-#                      pahOvrBands::Ptr{GDALRasterBandH},
-#                      pszResampling::Ptr{UInt8},
-#                      pfnProgress::GDALProgressFunc,
-#                      pProgressData::Ptr{Void}) =
-#     GDALRegenerateOverviews(hSrcBand, nOverviewCount, pahOverviewBands,
-#                             pszResampling, pfnProgress, pProgressData)::CPLErr
+### Returns
+`CE_None` on success or `CE_Failure` on failure.
+"""
+function regenerateoverviews(rasterband::RasterBand,
+                             noverviews::Integer,
+                             overviewbands::Vector{Ptr{GDAL.GDALRasterBandH}},
+                             resampling::AbstractString = "NEAREST")
+    result = GDAL.regenerateoverviews(rasterband.ptr, noverviews, overviewbands,
+                                      resampling,
+                                      Ptr{GDAL.GDALProgressFunc}(C_NULL),
+                                      C_NULL)
+    (result == GDAL.CE_Failure) && error("Failed to regenerate overviews")
+end
 
 # "Advise driver of upcoming read requests."
 # _rasteradviseread(hRB::GDALRasterBandH,
@@ -338,27 +340,29 @@ used in downsampling mode to get overview data efficiently.
 hasarbitraryoverviews(band::RasterBand) =
     Bool(GDAL.hasarbitraryoverviews(band.ptr))
 
-# """
-# Fetch the list of category names for this raster.
+"""
+Fetch the list of category names for this raster.
 
-# The return list is a "StringList" in the sense of the CPL functions. That is a
-# NULL terminated array of strings. Raster values without associated names will
-# have an empty string in the returned list. The first entry in the list is for
-# raster values of zero, and so on.
+The return list is a "StringList" in the sense of the CPL functions. That is a
+NULL terminated array of strings. Raster values without associated names will
+have an empty string in the returned list. The first entry in the list is for
+raster values of zero, and so on.
 
-# The returned stringlist should not be altered or freed by the application.
-# It may change on the next GDAL call, so please copy it if it is needed for any
-# period of time.
+The returned stringlist should not be altered or freed by the application.
+It may change on the next GDAL call, so please copy it if it is needed for any
+period of time.
 
-# ### Returns
-# list of names, or `NULL` if none.
-# """
-# _getrastercategorynames(band::GDALRasterBandH) =
-#     GDALGetRasterCategoryNames(band)::Ptr{Ptr{UInt8}}
+### Returns
+list of names, or `NULL` if none.
+"""
+getcategorynames(band::RasterBand) =
+    loadstringlist(GDAL.C.GDALGetRasterCategoryNames(band.ptr))
 
-# "Set the category names for this band."
-# _setrastercategorynames(band::GDALRasterBandH, names::Ptr{Ptr{UInt8}}) =
-#     GDALSetRasterCategoryNames(band, names)::CPLErr
+"Set the category names for this band."
+function setrastercategorynames(band::RasterBand, names::Vector{ASCIIString})
+    result = GDAL.setrastercategorynames(band.ptr, Ptr{Ptr{UInt8}}(pointer(names)))
+    (result != GDAL.CE_None) && error("Failed to set category names for this band")
+end
 
 """
 Flush raster data cache.
