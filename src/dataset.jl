@@ -435,12 +435,9 @@ call could be made:
 function buildoverviews(dataset::Dataset,
                         overviewlist::Vector{Cint},
                         resampling::AbstractString = "NEAREST")
-    result = GDAL.buildoverviews(dataset.ptr, pointer(resampling),
-                                 length(overviewlist),
-                                 pointer(overviewlist),
-                                 0, C_NULL,
-                                 Ptr{GDAL.GDALProgressFunc}(C_NULL),
-                                 C_NULL)
+    result = GDAL.buildoverviews(dataset.ptr, resampling, length(overviewlist),
+                                 overviewlist, 0, C_NULL,
+                                 Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL)
     (result == GDAL.CE_Failure) && error("Failed to build overviews")
 end
 
@@ -448,13 +445,9 @@ function buildoverviews(dataset::Dataset,
                         overviewlist::Vector{Cint},
                         bandlist::Vector{Cint} = Cint[],
                         resampling::AbstractString = "NEAREST")
-    result = GDAL.buildoverviews(dataset.ptr, pointer(resampling),
-                                 length(overviewlist),
-                                 pointer(overviewlist),
-                                 length(bandlist),
-                                 pointer(bandlist),
-                                 Ptr{GDAL.GDALProgressFunc}(C_NULL),
-                                 C_NULL)
+    result = GDAL.buildoverviews(dataset.ptr, resampling, length(overviewlist),
+                                 overviewlist, length(bandlist), bandlist,
+                                 Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL)
     (result == GDAL.CE_Failure) && error("Failed to build overviews")
 end
 
@@ -474,50 +467,42 @@ end
 # opendatasets(hDS::Ptr{Ptr{GDALDatasetH}}, pnCount::Ptr{Cint}) = 
 #     GDALGetOpenDatasets(hdS, pnCount)
 
-# """
-# Adds a mask band to the dataset.
+"""
+Adds a mask band to the dataset.
 
-# The default implementation of the `CreateMaskBand()` method is implemented
-# based on similar rules to the .ovr handling implemented using the
-# `GDALDefaultOverviews` object. A TIFF file with the extension .msk will be
-# created with the same basename as the original file, and it will have one band.
-# The mask images will be deflate compressed tiled images with the same block
-# size as the original image if possible.
+The default implementation of the `CreateMaskBand()` method is implemented
+based on similar rules to the .ovr handling implemented using the
+`GDALDefaultOverviews` object. A TIFF file with the extension .msk will be
+created with the same basename as the original file, and it will have one band.
+The mask images will be deflate compressed tiled images with the same block
+size as the original image if possible.
 
-# If you got a mask band with a previous call to `GetMaskBand()`, it might be
-# invalidated by CreateMaskBand(). So you have to call `GetMaskBand()` again.
+If you got a mask band with a previous call to `GetMaskBand()`, it might be
+invalidated by CreateMaskBand(). So you have to call `GetMaskBand()` again.
 
-# See also: http://trac.osgeo.org/gdal/wiki/rfc15_nodatabitmask
+See also: http://trac.osgeo.org/gdal/wiki/rfc15_nodatabitmask
 
-# ### Parameters
-# * `nFlags`  ignored. `GMF_PER_DATASET` will be assumed.
+### Parameters
+* `nFlags`  ignored. `GMF_PER_DATASET` will be assumed.
 
-# ### Returns
-# `CE_None` on success or `CE_Failure` on an error.
-# """
-# _createdatasetmaskband(hDS::GDALDatasetH,
-#                        nFlags::Integer = GMF_PER_DATASET) =
-#     GDALCreateDatasetMaskBand(hDS, nFlags)::CPLErr
+### Returns
+`CE_None` on success or `CE_Failure` on an error.
+"""
+function createdatasetmaskband(dataset::Dataset)
+    result = GDAL.createdatasetmaskband(dataset.ptr)
+    (result == GDAL.CE_Failure) && error("Failed to create dataset mask band")
+end
 
-# function createdatasetmaskband(hDS::GDALDatasetH)
-#     result = _createdatasetmaskband(hDS)
-#     (result == CE_Failure) && error("Failed to create dataset mask band")
-# end
+"""
+Get output projection for GCPs.
 
-# """
-# Get output projection for GCPs.
+The projection string follows the normal rules from `GetProjectionRef()`.
 
-# The projection string follows the normal rules from `GetProjectionRef()`.
-
-# ### Returns
-# internal projection string or `""` if there are no GCPs. It should not be
-# altered, freed or expected to last for long.
-# """
-# _getgcpprojection(dataset::GDALDatasetH) =
-#     GDALGetGCPProjection(dataset)::Ptr{UInt8}
-
-# getgcpprojection(dataset::GDALDatasetH) =
-#     bytestring(_getgcpprojection(dataset))
+### Returns
+internal projection string or `""` if there are no GCPs. It should not be
+altered, freed or expected to last for long.
+"""
+getgcpproj(dataset::Dataset) = GDAL.getgcpprojection(dataset.ptr)
 
 # """
 # Fetch GCPs.
