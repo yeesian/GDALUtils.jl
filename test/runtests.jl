@@ -54,5 +54,17 @@ GU.read("pyrasterio/RGB.byte.tif") do src
     end
 end
 
-include("tutorial_raster.jl")
-include("tutorial_vector.jl")
+for filename in ["data1a.jl",
+                 "data1b.jl",
+                 "data2a.jl",
+                 "data2b.jl",
+                 "data3a.jl",
+                 "data3b.jl",
+                 "data4a.jl",
+                 "data4b.jl",
+                 "data5a.jl",
+                 "data5b.jl",
+                 "tutorial_raster.jl",
+                 "tutorial_vector.jl"]
+    include(filename)
+end
