@@ -336,6 +336,118 @@ the path used to originally open the dataset. The strings will be UTF-8 encoded
 filelist(dataset::Dataset) =
     loadstringlist(GDAL.C.GDALGetFileList(Ptr{Void}(dataset.ptr)))
 
+"Fetch a layer by index (between 0 and GetLayerCount()-1)"
+fetchlayer(dataset::Dataset, i::Integer) =
+    FeatureLayer(GDAL.datasetgetlayer(dataset.ptr, i))
+
+"Fetch a feature layer for a dataset from its name"
+fetchlayer(dataset::Dataset, name::AbstractString) =
+    FeatureLayer(GDAL.datasetgetlayerbyname(dataset.ptr, name))
+
+"""
+Delete the indicated layer (at index i) from the datasource.
+
+### Returns
+OGRERR_NONE on success, or OGRERR_UNSUPPORTED_OPERATION if deleting layers
+is not supported for this datasource.
+"""
+function deletelayer(dataset::Dataset, i::Integer)
+    result = GDAL.datasetdeletelayer(dataset.ptr, i)
+    if result != GDAL.OGRERR_NONE
+        error("Failed to delete layer")
+    end
+end
+
+"""
+This function attempts to create a new layer on the dataset with the indicated
+name, coordinate system, geometry type.
+
+### Parameters
+* **dataset**: the dataset
+* **name**: the name for the new layer. This should ideally not match any
+    existing layer on the datasource.
+* **spatialref**: the coordinate system to use for the new layer, or NULL if
+    no coordinate system is available.
+* **geomtype**: the geometry type for the layer. Use wkbUnknown if there are no
+    constraints on the types geometry to be written.
+* **papszOptions**: a StringList of name=value (driver-specific) options.
+"""
+function createlayer(dataset::Dataset,
+                     name::AbstractString,
+                     geomtype::GDAL.OGRwkbGeometryType = GDAL.wkbUnknown)
+    FeatureLayer(GDAL.datasetcreatelayer(dataset.ptr, name, Ptr{GDAL.OGRSpatialReferenceH}(C_NULL),
+                                         geomtype, C_NULL))
+end
+
+function createlayer(dataset::Dataset,
+                     name::AbstractString,
+                     spatialref::SpatialRef,
+                     geomtype::GDAL.OGRwkbGeometryType = GDAL.wkbUnknown)
+    FeatureLayer(GDAL.datasetcreatelayer(dataset.ptr, name, spatialref.ptr,
+                                         geomtype, C_NULL))
+end
+
+"""
+Duplicate an existing layer.
+
+### Parameters
+* **dataset**: the dataset handle.
+* **layer**: source layer.
+* **name**: the name of the layer to create.
+* **papszOptions**: a StringList of name=value (driver-specific) options.
+"""
+copylayer(dataset::Dataset,layer::FeatureLayer, name::AbstractString) =
+    FeatureLayer(GDAL.datasetcopylayer(dataset.ptr, layer.ptr, name, C_NULL))
+
+"""
+Execute an SQL statement against the data store.
+
+### Parameters
+* **dataset**: the dataset handle.
+* **query**: the SQL statement to execute.
+* **spatialfilter**: geometry which represents a spatial filter. Can be NULL.
+* **dialect**: allows control of the statement dialect. If set to NULL, the
+    OGR SQL engine will be used, except for RDBMS drivers that will use their
+    dedicated SQL engine, unless OGRSQL is explicitly passed as the dialect.
+    Starting with OGR 1.10, the SQLITE dialect can also be used.
+
+### Returns
+an OGRLayer containing the results of the query.
+Deallocate with ReleaseResultSet().
+"""
+executesql(dataset::Dataset, query::AbstractString) =
+    FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query, C_NULL, C_NULL))
+
+executesql(dataset::Dataset, query::AbstractString, dialect::AbstractString) =
+    FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query, C_NULL, dialect))
+
+function executesql(dataset::Dataset,
+                  query::AbstractString,
+                  spatialfilter::Geometry,
+                  dialect::AbstractString)
+    FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query, spatialfilter.ptr,
+                                        dialect))
+end
+
+function executesql(f::Function, dataset::Dataset, args...)
+    result = sqlquery(dataset, args...)
+    try
+        f(result)
+    finally
+        releaseresultset(dataset, result)
+    end
+end
+
+"""
+Release results of ExecuteSQL().
+
+### Parameters
+* **dataset**: the dataset handle.
+* **layer**: the result of a previous ExecuteSQL() call.
+"""
+releaseresultset(dataset::Dataset, layer::FeatureLayer) =
+    GDAL.datasetreleaseresultset(dataset.ptr, layer.ptr)
+
 """
 Fetch the affine transformation coefficients.
 
@@ -649,4 +761,19 @@ getgcpproj(dataset::Dataset) = GDAL.getgcpprojection(dataset.ptr)
 # """
 # function datasetrollbacktransaction{T <: GDALDatasetH}(hDS::Ptr{T})
 #     ccall((:GDALDatasetRollbackTransaction,libgdal),OGRErr,(Ptr{GDALDatasetH},),hDS)
+# end
+
+
+# """
+#     GDALDatasetTestCapability(GDALDatasetH hDS,
+#                               const char * pszCap) -> int
+# Test if capability is available.
+# ### Parameters
+# * **hDS**: the dataset handle.
+# * **pszCap**: the capability to test.
+# ### Returns
+# TRUE if capability available otherwise FALSE.
+# """
+# function datasettestcapability{T <: GDALDatasetH}(arg1::Ptr{T},arg2)
+#     ccall((:GDALDatasetTestCapability,libgdal),Cint,(Ptr{GDALDatasetH},Cstring),arg1,arg2)
 # end

@@ -216,7 +216,7 @@ Get the dimension of this geometry.
 ### Returns
 0 for points, 1 for lines and 2 for surfaces.
 """
-getdimension(geom::Geometry) = GDAL.getdimension(geom.ptr)
+getdim(geom::Geometry) = GDAL.getdim(geom.ptr)
 
 """
 Get the dimension of the coordinates in this geometry.
@@ -856,7 +856,7 @@ addpoint(geom::Geometry, x, y) = GDAL.addpoint_2d(geom.ptr, x, y)
 
 
 "The number of elements in a geometry or number of geometries in container."
-ngeometry(geom::Geometry) = GDAL.getgeometrycount(geom.ptr)
+ngeom(geom::Geometry) = GDAL.getgeometrycount(geom.ptr)
 
 """
 Fetch geometry from a geometry container.
@@ -942,11 +942,11 @@ Return, possibly approximate, linear version of this geometry.
 * **options**: options as a null-terminated list of strings or NULL.
     See OGRGeometryFactory::curveToLineString() for valid options.
 """
-lineargeom(geom::Geometry, stepsize::Real=0.0) = 
+getlineargeom(geom::Geometry, stepsize::Real=0.0) = 
     Geometry(GDAL.getlineargeometry(geom.ptr, stepsize, C_NULL))
 
 "Return curve version of this geometry."
-curvegeom(geom::Geometry) = Geometry(GDAL.getcurvegeometry(geom.ptr, C_NULL))
+getcurvegeom(geom::Geometry) = Geometry(GDAL.getcurvegeometry(geom.ptr, C_NULL))
 
 """
 Build a ring from a bunch of arcs.
@@ -969,3 +969,24 @@ function polygonfromedges(lines::Geometry, besteffort::Bool, autoclose::Bool,
     end
     Geometry(result)
 end
+
+# """
+#     OGRSetNonLinearGeometriesEnabledFlag(int bFlag) -> void
+# Set flag to enable/disable returning non-linear geometries in the C API.
+# ### Parameters
+# * **bFlag**: TRUE if non-linear geometries might be returned (default value). FALSE to ask for non-linear geometries to be approximated as linear geometries.
+# ### Returns
+# a point or NULL.
+# """
+# function setnonlineargeometriesenabledflag(bFlag::Integer)
+#     ccall((:OGRSetNonLinearGeometriesEnabledFlag,libgdal),Void,(Cint,),bFlag)
+# end
+
+
+# """
+#     OGRGetNonLinearGeometriesEnabledFlag(void) -> int
+# Get flag to enable/disable returning non-linear geometries in the C API.
+# """
+# function getnonlineargeometriesenabledflag()
+#     ccall((:OGRGetNonLinearGeometriesEnabledFlag,libgdal),Cint,())
+# end

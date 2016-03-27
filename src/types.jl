@@ -250,3 +250,42 @@ getcolorinterp(name::AbstractString) = GDAL.getcolorinterpretationbyname(name)
 # function getpaletteinterpretationname(arg1::GDALPaletteInterp)
 #     bytestring(ccall((:GDALGetPaletteInterpretationName,libgdal),Cstring,(GDALPaletteInterp,),arg1))
 # end
+
+# """
+#     OGR_GetFieldTypeName(OGRFieldType eType) -> const char *
+# Fetch human readable name for a field type.
+# ### Parameters
+# * **eType**: the field type to get name for.
+# ### Returns
+# the name.
+# """
+# function getfieldtypename(arg1::OGRFieldType)
+#     bytestring(ccall((:OGR_GetFieldTypeName,libgdal),Cstring,(OGRFieldType,),arg1))
+# end
+
+# """
+#     OGR_GetFieldSubTypeName(OGRFieldSubType eSubType) -> const char *
+# Fetch human readable name for a field subtype.
+# ### Parameters
+# * **eSubType**: the field subtype to get name for.
+# ### Returns
+# the name.
+# """
+# function getfieldsubtypename(arg1::OGRFieldSubType)
+#     bytestring(ccall((:OGR_GetFieldSubTypeName,libgdal),Cstring,(OGRFieldSubType,),arg1))
+# end
+
+
+# """
+#     OGR_AreTypeSubTypeCompatible(OGRFieldType eType,
+#                                  OGRFieldSubType eSubType) -> int
+# Return if type and subtype are compatible.
+# ### Parameters
+# * **eType**: the field type.
+# * **eSubType**: the field subtype.
+# ### Returns
+# TRUE if type and subtype are compatible
+# """
+# function aretypesubtypecompatible(eType::OGRFieldType,eSubType::OGRFieldSubType)
+#     ccall((:OGR_AreTypeSubTypeCompatible,libgdal),Cint,(OGRFieldType,OGRFieldSubType),eType,eSubType)
+# end

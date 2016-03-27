@@ -27,7 +27,7 @@ getfieldindex(featuredefn::FeatureDefn, name::AbstractString) =
     GDAL.getfieldindex(featuredefn.ptr, name)
 
 "Add a new field definition to the passed feature definition."
-adddefn(featuredefn::FeatureDefn, fielddefn::FieldDefn) =
+addfielddefn(featuredefn::FeatureDefn, fielddefn::FieldDefn) =
     GDAL.addfielddefn(featuredefn.ptr, fielddefn.ptr)
 
 "Delete an existing field definition."
@@ -74,6 +74,54 @@ setgeomignored(featuredefn::FeatureDefn, ignore::Bool) =
 "Determine whether the style can be omitted when fetching features."
 isstyleignored(featuredefn::FeatureDefn) =
     Bool(GDAL.isstyleignored(featuredefn.ptr))
+
+# """
+#     OGR_FD_SetStyleIgnored(OGRFeatureDefnH hDefn,
+#                            int bIgnore) -> void
+# Set whether the style can be omitted when fetching features.
+# ### Parameters
+# * **hDefn**: handle to the feature definition on witch OGRFeature are based on.
+# * **bIgnore**: ignore state
+# """
+# function setstyleignored(arg1::Ptr{OGRFeatureDefnH},arg2::Integer)
+#     ccall((:OGR_FD_SetStyleIgnored,libgdal),Void,(Ptr{OGRFeatureDefnH},Cint),arg1,arg2)
+# end
+
+# """
+#     OGR_FD_Reference(OGRFeatureDefnH hDefn) -> int
+# Increments the reference count by one.
+# ### Parameters
+# * **hDefn**: handle to the feature definition on witch OGRFeature are based on.
+# ### Returns
+# the updated reference count.
+# """
+# function reference(arg1::Ptr{OGRFeatureDefnH})
+#     ccall((:OGR_FD_Reference,libgdal),Cint,(Ptr{OGRFeatureDefnH},),arg1)
+# end
+
+# """
+#     OGR_FD_Dereference(OGRFeatureDefnH hDefn) -> int
+# Decrements the reference count by one.
+# ### Parameters
+# * **hDefn**: handle to the feature definition on witch OGRFeature are based on.
+# ### Returns
+# the updated reference count.
+# """
+# function dereference(arg1::Ptr{OGRFeatureDefnH})
+#     ccall((:OGR_FD_Dereference,libgdal),Cint,(Ptr{OGRFeatureDefnH},),arg1)
+# end
+
+# """
+#     OGR_FD_GetReferenceCount(OGRFeatureDefnH hDefn) -> int
+# Fetch current reference count.
+# ### Parameters
+# * **hDefn**: handle to the feature definition on witch OGRFeature are based on.
+# ### Returns
+# the current reference count.
+# """
+# function getreferencecount(arg1::Ptr{OGRFeatureDefnH})
+#     ccall((:OGR_FD_GetReferenceCount,libgdal),Cint,(Ptr{OGRFeatureDefnH},),arg1)
+# end
 
 "Fetch number of geometry fields on the passed feature definition."
 ngeomfield(featuredefn::FeatureDefn) = GDAL.getgeomfieldcount(featuredefn.ptr)

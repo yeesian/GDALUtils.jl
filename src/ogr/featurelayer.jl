@@ -9,6 +9,19 @@ getgeomtype(layer::FeatureLayer) = GDAL.getgeomtype(layer.ptr)
 getspatialfilter(layer::FeatureLayer) =
     Geometry(GDAL.getspatialfilter(layer.ptr))
 
+# """
+#     OGR_L_GetSpatialRef(OGRLayerH) -> OGRSpatialReferenceH
+# Fetch the spatial reference system for this layer.
+# ### Parameters
+# * **hLayer**: handle to the layer to get the spatial reference from.
+# ### Returns
+# spatial reference, or NULL if there isn't one.
+# """
+# function getspatialref{T <: OGRLayerH}(arg1::Ptr{T})
+#     checknull(ccall((:OGR_L_GetSpatialRef,libgdal),Ptr{OGRSpatialReferenceH},(Ptr{OGRLayerH},),arg1))
+# end
+
+
 "Set a new spatial filter for the layer, using the geom."
 setspatialfilter(layer::FeatureLayer, geom::Geometry) = 
     GDAL.setspatialfilter(layer.ptr, geom.ptr)
@@ -62,132 +75,6 @@ function setattributefilter(layer::FeatureLayer, query::AbstractString)
     result = GDAL.setattributefilter(layer.ptr, query)
     (result != GDAL.OGRERR_NONE) && error("Failed to set a new attribute query")
 end
-
-"Fetch a layer by index (between 0 and GetLayerCount()-1)"
-fetchlayer(dataset::Dataset, i::Integer) =
-    FeatureLayer(GDAL.datasetgetlayer(dataset.ptr, i))
-
-"Fetch a feature layer for a dataset from its name"
-fetchlayer(dataset::Dataset, name::AbstractString) =
-    FeatureLayer(GDAL.datasetgetlayerbyname(dataset.ptr, name))
-
-"""
-Delete the indicated layer (at index i) from the datasource.
-
-### Returns
-OGRERR_NONE on success, or OGRERR_UNSUPPORTED_OPERATION if deleting layers
-is not supported for this datasource.
-"""
-function deletelayer(dataset::Dataset, i::Integer)
-    result = GDAL.datasetdeletelayer(dataset.ptr, i)
-    if result != GDAL.OGRERR_NONE
-        error("Failed to delete layer")
-    end
-end
-
-"""
-This function attempts to create a new layer on the dataset with the indicated
-name, coordinate system, geometry type.
-
-### Parameters
-* **dataset**: the dataset
-* **name**: the name for the new layer. This should ideally not match any
-    existing layer on the datasource.
-* **spatialref**: the coordinate system to use for the new layer, or NULL if
-    no coordinate system is available.
-* **geomtype**: the geometry type for the layer. Use wkbUnknown if there are no
-    constraints on the types geometry to be written.
-* **papszOptions**: a StringList of name=value (driver-specific) options.
-"""
-function createlayer(dataset::Dataset,
-                     name::AbstractString,
-                     geomtype::GDAL.OGRwkbGeometryType = GDAL.wkbUnknown)
-    FeatureLayer(GDAL.datasetcreatelayer(dataset.ptr, name, Ptr{GDAL.OGRSpatialReferenceH}(C_NULL),
-                                         geomtype, C_NULL))
-end
-
-function createlayer(dataset::Dataset,
-                     name::AbstractString,
-                     spatialref::SpatialRef,
-                     geomtype::GDAL.OGRwkbGeometryType = GDAL.wkbUnknown)
-    FeatureLayer(GDAL.datasetcreatelayer(dataset.ptr, name, spatialref.ptr,
-                                         geomtype, C_NULL))
-end
-
-"""
-Duplicate an existing layer.
-
-### Parameters
-* **dataset**: the dataset handle.
-* **layer**: source layer.
-* **name**: the name of the layer to create.
-* **papszOptions**: a StringList of name=value (driver-specific) options.
-"""
-copylayer(dataset::Dataset,layer::FeatureLayer, name::AbstractString) =
-    FeatureLayer(GDAL.datasetcopylayer(dataset.ptr, layer.ptr, name, C_NULL))
-
-# """
-#     GDALDatasetTestCapability(GDALDatasetH hDS,
-#                               const char * pszCap) -> int
-# Test if capability is available.
-# ### Parameters
-# * **hDS**: the dataset handle.
-# * **pszCap**: the capability to test.
-# ### Returns
-# TRUE if capability available otherwise FALSE.
-# """
-# function datasettestcapability{T <: GDALDatasetH}(arg1::Ptr{T},arg2)
-#     ccall((:GDALDatasetTestCapability,libgdal),Cint,(Ptr{GDALDatasetH},Cstring),arg1,arg2)
-# end
-
-"""
-Execute an SQL statement against the data store.
-
-### Parameters
-* **dataset**: the dataset handle.
-* **query**: the SQL statement to execute.
-* **spatialfilter**: geometry which represents a spatial filter. Can be NULL.
-* **dialect**: allows control of the statement dialect. If set to NULL, the
-    OGR SQL engine will be used, except for RDBMS drivers that will use their
-    dedicated SQL engine, unless OGRSQL is explicitly passed as the dialect.
-    Starting with OGR 1.10, the SQLITE dialect can also be used.
-
-### Returns
-an OGRLayer containing the results of the query.
-Deallocate with ReleaseResultSet().
-"""
-executesql(dataset::Dataset, query::AbstractString) =
-    FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query, C_NULL, C_NULL))
-
-executesql(dataset::Dataset, query::AbstractString, dialect::AbstractString) =
-    FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query, C_NULL, dialect))
-
-function executesql(dataset::Dataset,
-                  query::AbstractString,
-                  spatialfilter::Geometry,
-                  dialect::AbstractString)
-    FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query, spatialfilter.ptr,
-                                        dialect))
-end
-
-function executesql(f::Function, dataset::Dataset, args...)
-    result = sqlquery(dataset, args...)
-    try
-        f(result)
-    finally
-        releaseresultset(dataset, result)
-    end
-end
-
-"""
-Release results of ExecuteSQL().
-
-### Parameters
-* **dataset**: the dataset handle.
-* **layer**: the result of a previous ExecuteSQL() call.
-"""
-releaseresultset(dataset::Dataset, layer::FeatureLayer) =
-    GDAL.datasetreleaseresultset(dataset.ptr, layer.ptr)
 
 "Reset feature reading to start on the first feature."
 resetreading(layer::FeatureLayer) = GDAL.resetreading(layer.ptr)
@@ -403,6 +290,20 @@ Clear a field, marking it as unset.
 * **i**: the field to fetch, from 0 to GetFieldCount()-1.
 """
 unsetfield(feature::Feature, i::Integer) = GDAL.unsetfield(feature.ptr, i)
+
+# """
+#     OGR_F_GetRawFieldRef(OGRFeatureH hFeat,
+#                          int iField) -> OGRField *
+# Fetch an handle to the internal field value given the index.
+# ### Parameters
+# * **hFeat**: handle to the feature on which field is found.
+# * **iField**: the field to fetch, from 0 to GetFieldCount()-1.
+# ### Returns
+# the returned handle is to an internal data structure, and should not be freed, or modified.
+# """
+# function getrawfieldref(arg1::Ptr{OGRFeatureH},arg2::Integer)
+#     ccall((:OGR_F_GetRawFieldRef,libgdal),Ptr{OGRField},(Ptr{OGRFeatureH},Cint),arg1,arg2)
+# end
 
 """Fetch field value as integer.
 
@@ -1100,6 +1001,20 @@ nfeature(layer::FeatureLayer, force::Bool=false) =
 #     ccall((:OGR_L_GetExtentEx,libgdal),OGRErr,(Ptr{OGRLayerH},Cint,Ptr{OGREnvelope},Cint),arg1,iGeomField,psExtent,bForce)
 # end
 
+# """
+#     OGR_L_TestCapability(OGRLayerH,
+#                          const char *) -> int
+# Test if this layer supported the named capability.
+# ### Parameters
+# * **hLayer**: handle to the layer to get the capability from.
+# * **pszCap**: the name of the capability to test.
+# ### Returns
+# TRUE if the layer has the requested capability, or FALSE otherwise. OGRLayers will return FALSE for any unrecognized capabilities.
+# """
+# function testcapability{T <: OGRLayerH}(arg1::Ptr{T},arg2)
+#     ccall((:OGR_L_TestCapability,libgdal),Cint,(Ptr{OGRLayerH},Cstring),arg1,arg2)
+# end
+
 """
 Create a new field on a layer.
 
@@ -1132,7 +1047,7 @@ depending on the limitations of the format driver.
 ### Returns
 OGRERR_NONE on success.
 """
-function createfield(layer::FeatureLayer, field::GeomFieldDefn,
+function creategeomfield(layer::FeatureLayer, field::GeomFieldDefn,
                      approx::Bool = false)
     result = GDAL.creategeomfield(layer.ptr, field.ptr, approx)
     if result != GDAL.OGRERR_NONE
@@ -1208,6 +1123,102 @@ end
 #     ccall((:OGR_L_AlterFieldDefn,libgdal),OGRErr,(Ptr{OGRLayerH},Cint,Ptr{OGRFieldDefnH},Cint),arg1,iField,hNewFieldDefn,nFlags)
 # end
 
+# """
+#     OGR_L_StartTransaction(OGRLayerH) -> OGRErr
+# For datasources which support transactions, StartTransaction creates a transaction.
+# ### Parameters
+# * **hLayer**: handle to the layer
+# ### Returns
+# OGRERR_NONE on success.
+# """
+# function starttransaction{T <: OGRLayerH}(arg1::Ptr{T})
+#     ccall((:OGR_L_StartTransaction,libgdal),OGRErr,(Ptr{OGRLayerH},),arg1)
+# end
+
+
+# """
+#     OGR_L_CommitTransaction(OGRLayerH) -> OGRErr
+# For datasources which support transactions, CommitTransaction commits a transaction.
+# ### Parameters
+# * **hLayer**: handle to the layer
+# ### Returns
+# OGRERR_NONE on success.
+# """
+# function committransaction{T <: OGRLayerH}(arg1::Ptr{T})
+#     ccall((:OGR_L_CommitTransaction,libgdal),OGRErr,(Ptr{OGRLayerH},),arg1)
+# end
+
+
+# """
+#     OGR_L_RollbackTransaction(OGRLayerH) -> OGRErr
+# For datasources which support transactions, RollbackTransaction will roll back a datasource to its state before the start of the current transaction.
+# ### Parameters
+# * **hLayer**: handle to the layer
+# ### Returns
+# OGRERR_NONE on success.
+# """
+# function rollbacktransaction{T <: OGRLayerH}(arg1::Ptr{T})
+#     ccall((:OGR_L_RollbackTransaction,libgdal),OGRErr,(Ptr{OGRLayerH},),arg1)
+# end
+
+
+# """
+#     OGR_L_Reference(OGRLayerH hLayer) -> int
+# """
+# function reference{T <: OGRLayerH}(arg1::Ptr{T})
+#     ccall((:OGR_L_Reference,libgdal),Cint,(Ptr{OGRLayerH},),arg1)
+# end
+
+
+# """
+#     OGR_L_Dereference(OGRLayerH hLayer) -> int
+# """
+# function dereference{T <: OGRLayerH}(arg1::Ptr{T})
+#     ccall((:OGR_L_Dereference,libgdal),Cint,(Ptr{OGRLayerH},),arg1)
+# end
+
+
+# """
+#     OGR_L_GetRefCount(OGRLayerH hLayer) -> int
+# """
+# function getrefcount{T <: OGRLayerH}(arg1::Ptr{T})
+#     ccall((:OGR_L_GetRefCount,libgdal),Cint,(Ptr{OGRLayerH},),arg1)
+# end
+
+
+# """
+#     OGR_L_SyncToDisk(OGRLayerH) -> OGRErr
+# Flush pending changes to disk.
+# ### Parameters
+# * **hLayer**: handle to the layer
+# ### Returns
+# OGRERR_NONE if no error occurs (even if nothing is done) or an error code.
+# """
+# function synctodisk{T <: OGRLayerH}(arg1::Ptr{T})
+#     ccall((:OGR_L_SyncToDisk,libgdal),OGRErr,(Ptr{OGRLayerH},),arg1)
+# end
+
+
+# """
+#     OGR_L_GetFeaturesRead(OGRLayerH hLayer) -> GIntBig
+# """
+# function getfeaturesread{T <: OGRLayerH}(arg1::Ptr{T})
+#     ccall((:OGR_L_GetFeaturesRead,libgdal),GIntBig,(Ptr{OGRLayerH},),arg1)
+# end
+
+
+# """
+#     OGR_L_GetFIDColumn(OGRLayerH) -> const char *
+# This method returns the name of the underlying database column being used as the FID column, or "" if not supported.
+# ### Parameters
+# * **hLayer**: handle to the layer
+# ### Returns
+# fid column name.
+# """
+# function getfidcolumn{T <: OGRLayerH}(arg1::Ptr{T})
+#     bytestring(ccall((:OGR_L_GetFIDColumn,libgdal),Cstring,(Ptr{OGRLayerH},),arg1))
+# end
+
 """
 This method returns the name of the underlying database column being used as
 the geometry column, or "" if not supported.
@@ -1225,7 +1236,7 @@ passed, the ignored list is cleared.
 OGRERR_NONE if all field names have been resolved (even if the driver does not
 support this method)
 """
-function ignorefields(layer::FeatureLayer, fieldnames)
+function setignoredfields(layer::FeatureLayer, fieldnames)
     GDAL.setignoredfields(layer.ptr, Ptr{Ptr{UInt8}}(pointer(fieldnames)))
 end
 
