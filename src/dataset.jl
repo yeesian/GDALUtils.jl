@@ -130,9 +130,9 @@ end
 
 function create(filename::AbstractString,
                 driver::Driver,
-                width::Int = 0,
-                height::Int = 0,
-                nbands::Int = 0,
+                width::Integer = 0,
+                height::Integer = 0,
+                nbands::Integer = 0,
                 dtype::DataType = Any,
                 options::Vector{ASCIIString} = Vector{ASCIIString}())
     Dataset(GDAL.create(driver.ptr, filename,
@@ -142,9 +142,9 @@ end
 
 function create(filename::AbstractString,
                 drivername::AbstractString,
-                width::Int = 0,
-                height::Int = 0,
-                nbands::Int = 0,
+                width::Integer = 0,
+                height::Integer = 0,
+                nbands::Integer = 0,
                 dtype::DataType = Any)
     Dataset(GDAL.create(GDAL.getdriverbyname(drivername), filename,
                         width, height, nbands, _gdaltype[dtype],
@@ -343,11 +343,11 @@ transformation to projection coordinates.
 ### Returns
 `CE_None` on success, or `CE_Failure` if no transform can be fetched.
 """
-function getgeotransform!(dataset::Dataset, buffer::Vector{Cdouble})
-    @assert length(buffer) == 6
-    result = GDAL.getgeotransform(dataset.ptr, pointer(buffer))
+function getgeotransform!(dataset::Dataset, transform::Vector{Cdouble})
+    @assert length(transform) == 6
+    result = GDAL.getgeotransform(dataset.ptr, pointer(transform))
     (result == GDAL.CE_Failure) && error("Failed to get geotransform from raster")
-    buffer
+    transform
 end
 
 getgeotransform(dataset::Dataset) =
@@ -355,7 +355,7 @@ getgeotransform(dataset::Dataset) =
 
 "Set the affine transformation coefficients."
 function setgeotransform!(dataset::Dataset, transform::Vector{Cdouble})
-    @assert length(buffer) == 6
+    @assert length(transform) == 6
     result = GDAL.setgeotransform(dataset.ptr, pointer(transform))
     (result == GDAL.CE_Failure) && error("Failed to transform raster dataset")
 end
@@ -433,16 +433,29 @@ call could be made:
 ```
 """
 function buildoverviews(dataset::Dataset,
-                        resampling::AbstractString,
                         overviewlist::Vector{Cint},
-                        bandList::Vector{Cint})
+                        resampling::AbstractString = "NEAREST")
+    result = GDAL.buildoverviews(dataset.ptr, pointer(resampling),
+                                 length(overviewlist),
+                                 pointer(overviewlist),
+                                 0, C_NULL,
+                                 Ptr{GDAL.GDALProgressFunc}(C_NULL),
+                                 C_NULL)
+    (result == GDAL.CE_Failure) && error("Failed to build overviews")
+end
+
+function buildoverviews(dataset::Dataset,
+                        overviewlist::Vector{Cint},
+                        bandlist::Vector{Cint} = Cint[],
+                        resampling::AbstractString = "NEAREST")
     result = GDAL.buildoverviews(dataset.ptr, pointer(resampling),
                                  length(overviewlist),
                                  pointer(overviewlist),
                                  length(bandlist),
                                  pointer(bandlist),
-                                 C_NULL, C_NULL)
-    (result == CE_Failure) && error("Failed to build overviews")
+                                 Ptr{GDAL.GDALProgressFunc}(C_NULL),
+                                 C_NULL)
+    (result == GDAL.CE_Failure) && error("Failed to build overviews")
 end
 
 # """

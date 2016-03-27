@@ -121,7 +121,7 @@ getnodatavalue(rasterband::RasterBand) =
     GDAL.getrasternodatavalue(rasterband.ptr, C_NULL)
 
 "Set the no data value for this band."
-function setnodatavalue(rasterband::RasterBand, value::Cdouble)
+function setnodatavalue(rasterband::RasterBand, value::Real)
     result = GDAL.setrasternodatavalue(rasterband.ptr, value)
     (result == GDAL.CE_Failure) && error("Could not set nodatavalue")
 end
@@ -370,7 +370,7 @@ and ensure that new requests are referred to the underlying driver.
 `CE_None` on success.
 """
 function flushcache(band::RasterBand)
-    result = GDAL.flushcache(band.ptr)
+    result = GDAL.flushrastercache(band.ptr)
     (result != GDAL.CE_None) && error("Failed to flush raster data cache")
 end
 
