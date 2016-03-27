@@ -35,7 +35,8 @@ GU.read("tmp/hw2a.shp") do input
             GU.createfeature(outfeaturedefn) do outfeature
                 # set the geometry and attribute
                 GU.setgeom(outfeature, geom)
-                GU.setfield(outfeature, 0, GU.getfield(infeature, nameindex))
+                inname = GU.fetchfield(infeature, nameindex)
+                GU.setfield(outfeature, 0, inname)
                 # add the feature to the shapefile
                 GU.createfeature(outlayer, outfeature)
             end
