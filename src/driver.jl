@@ -1,4 +1,13 @@
 
+function registerdrivers(f::Function)
+    GDAL.allregister()
+    try
+        f()
+    finally
+        GDAL.destroydrivermanager()
+    end
+end
+
 "Fetch driver by index"
 getdriver(i::Integer) = Driver(GDAL.getdriver(i-1))
 

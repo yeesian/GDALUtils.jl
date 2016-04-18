@@ -80,9 +80,11 @@ function reproject(inFN, inEPSG, outFN, outEPSG)
     end
 end
 
-for inFN in readdir("./ospy/data3/")
-    if endswith(inFN, ".shp")
-        outFN = replace(inFN, ".shp", "_proj.shp")
-        reproject("./ospy/data3/$(inFN)", 26912, "tmp/$(outFN)", 4269)
+GU.registerdrivers() do
+    for inFN in readdir("./ospy/data3/")
+        if endswith(inFN, ".shp")
+            outFN = replace(inFN, ".shp", "_proj.shp")
+            reproject("./ospy/data3/$(inFN)", 26912, "tmp/$(outFN)", 4269)
+        end
     end
 end

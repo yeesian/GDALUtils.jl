@@ -2,35 +2,37 @@
 
 import GDALUtils; const GU = GDALUtils
 
-GU.read("ospy/data4/sites.shp") do shp
-    GU.read("ospy/data4/aster.img") do img
-        shplayer = GU.fetchlayer(shp, 0)
-        featuredefn = GU.getlayerdefn(shplayer)
-        id_index = GU.getfieldindex(featuredefn, "ID")
+GU.registerdrivers() do
+    GU.read("ospy/data4/sites.shp") do shp
+        GU.read("ospy/data4/aster.img") do img
+            shplayer = GU.fetchlayer(shp, 0)
+            featuredefn = GU.getlayerdefn(shplayer)
+            id_index = GU.getfieldindex(featuredefn, "ID")
 
-        # get georeference info
-        transform = GU.getgeotransform(img)
-        xOrigin = transform[1]
-        yOrigin = transform[4]
-        pixelWidth = transform[2]
-        pixelHeight = transform[6]
+            # get georeference info
+            transform = GU.getgeotransform(img)
+            xOrigin = transform[1]
+            yOrigin = transform[4]
+            pixelWidth = transform[2]
+            pixelHeight = transform[6]
 
-        # loop through the features in the shapefile
-        for feature in shplayer
-            geom = GU.getgeom(feature)
-            x = GU.getx(geom, 0)
-            y = GU.gety(geom, 0)
-            # compute pixel offset
-            xOffset = round(Int, (x - xOrigin) / pixelWidth)
-            yOffset = round(Int, (y - yOrigin) / pixelHeight)
-            # create a string to print out
-            s = string(GU.fetchfield(feature, id_index)) * " "
-            for j in 1:GU.nraster(img)
-                data = GU.fetch(img, j, 1, 1, xOffset, yOffset)
-                s = s * string(data[1,1]) * " "
+            # loop through the features in the shapefile
+            for feature in shplayer
+                geom = GU.getgeom(feature)
+                x = GU.getx(geom, 0)
+                y = GU.gety(geom, 0)
+                # compute pixel offset
+                xOffset = round(Int, (x - xOrigin) / pixelWidth)
+                yOffset = round(Int, (y - yOrigin) / pixelHeight)
+                # create a string to print out
+                s = string(GU.fetchfield(feature, id_index)) * " "
+                for j in 1:GU.nraster(img)
+                    data = GU.fetch(img, j, 1, 1, xOffset, yOffset)
+                    s = s * string(data[1,1]) * " "
+                end
+                # print out the data string
+                println(s)
             end
-            # print out the data string
-            println(s)
         end
     end
 end

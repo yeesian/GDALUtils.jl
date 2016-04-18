@@ -2,42 +2,44 @@
 
 import GDALUtils; const GU = GDALUtils
 
-GU.read("ospy/data1/sites.shp") do input
-    GU.create("tmp/hw1b.shp", "ESRI Shapefile") do output
-        # get the layer for the input data source
-        inlayer = GU.fetchlayer(input, 0)
-        # create the layer for the output data source
-        outlayer = GU.createlayer(output, "hw1b", GDAL.wkbPoint)
+GU.registerdrivers() do
+    GU.read("ospy/data1/sites.shp") do input
+        GU.create("tmp/hw1b.shp", "ESRI Shapefile") do output
+            # get the layer for the input data source
+            inlayer = GU.fetchlayer(input, 0)
+            # create the layer for the output data source
+            outlayer = GU.createlayer(output, "hw1b", GDAL.wkbPoint)
 
-        # get FieldDefn's for the id and cover fields in the input shapefile
-        inlayerdefn = GU.getlayerdefn(inlayer)
-        idfielddefn = GU.fetchfielddefn(inlayerdefn, 0)
-        coverfielddefn = GU.fetchfielddefn(inlayerdefn, 1)
+            # get FieldDefn's for the id and cover fields in the input shapefile
+            inlayerdefn = GU.getlayerdefn(inlayer)
+            idfielddefn = GU.fetchfielddefn(inlayerdefn, 0)
+            coverfielddefn = GU.fetchfielddefn(inlayerdefn, 1)
 
-        # create new id and cover fields in the output shapefile
-        GU.createfield(outlayer, idfielddefn)
-        GU.createfield(outlayer, coverfielddefn)
+            # create new id and cover fields in the output shapefile
+            GU.createfield(outlayer, idfielddefn)
+            GU.createfield(outlayer, coverfielddefn)
 
-        # get the FeatureDefn for the output layer
-        outlayerdefn = GU.getlayerdefn(outlayer)
+            # get the FeatureDefn for the output layer
+            outlayerdefn = GU.getlayerdefn(outlayer)
 
-        # loop through the input features
-        for infeature in inlayer
-            # get the input feature attributes
-            id = GU.fetchfield(infeature, 0)
-            cover = GU.fetchfield(infeature, 1)
-            if cover == "trees"
-                GU.createfeature(outlayerdefn) do outfeature
-                    # set the geometry
-                    geom = GU.getgeom(infeature)
-                    GU.setgeom(outfeature, geom)
+            # loop through the input features
+            for infeature in inlayer
+                # get the input feature attributes
+                id = GU.fetchfield(infeature, 0)
+                cover = GU.fetchfield(infeature, 1)
+                if cover == "trees"
+                    GU.createfeature(outlayerdefn) do outfeature
+                        # set the geometry
+                        geom = GU.getgeom(infeature)
+                        GU.setgeom(outfeature, geom)
 
-                    # set the attributes
-                    GU.setfield(outfeature, 0, id)
-                    GU.setfield(outfeature, 1, cover)
+                        # set the attributes
+                        GU.setfield(outfeature, 0, id)
+                        GU.setfield(outfeature, 1, cover)
 
-                    # add the feature to the output layer
-                    GU.createfeature(outlayer, outfeature)
+                        # add the feature to the output layer
+                        GU.createfeature(outlayer, outfeature)
+                    end
                 end
             end
         end
