@@ -20,17 +20,7 @@ GU.read("ospy/data5/aster.img") do inDS
     GU.create("tmp/ndvi.img",
               GU.getdriver(inDS),
               cols, rows, 1, Float32) do outDS
-        for i in 0:ybsize:(rows-1), j in 0:xbsize:(cols-1)
-            if i + ybsize < rows
-                nrows = ybsize
-            else
-                nrows = rows - i
-            end
-            if j + xbsize < cols
-                ncols = xbsize
-            else
-                ncols = cols - j
-            end
+        for ((i,j),(nrows,ncols)) in GU.BlockIterator(inband2)
             GU.rasterio!(inband2, buffer2, ncols, nrows, j, i)
             GU.rasterio!(inband3, buffer3, ncols, nrows, j, i)
             data2 = buffer2[1:nrows,1:ncols]

@@ -1,3 +1,23 @@
+# function loadbuffer!{T <: Real}(band::RasterBand, buffer::Array{T,2})
+#     rows = height(band)
+#     cols = width(band)
+#     @assert size(buffer, 1) >= rows
+#     @assert size(buffer, 2) >= cols
+#     (xbsize, ybsize) = getblocksize(band)
+#     # loop through the rows
+#     for i in 0:ybsize:(rows-1)
+#         # loop through the columns
+#         for j in 0:xbsize:(cols-1)
+#             nrows = (i + ybsize < rows) ? ybsize : rows - i
+#             ncols = (j + xbsize < cols) ? xbsize : cols - j
+#             rasterio!(band, buffer, ncols, nrows, j, i)
+#         end
+#     end
+#     buffer
+# end
+
+# loadbuffer(band::RasterBand, d::DataType = UInt8) =
+#     loadbuffer!(band, Array(d, height(band), width(band)))
 
 """
 Read/write a region of image data from multiple bands.
@@ -221,11 +241,11 @@ function rasterio!{T <: Real, U <: Integer}(rasterband::RasterBand,
                                             access::GDAL.GDALRWFlag = GDAL.GF_Read,
                                             nPixelSpace::Integer = 0,
                                             nLineSpace::Integer = 0)
-    _width = cols[end] - cols[1] + 1
-    _width < 0 && error("invalid window width")
-    _height = rows[end] - rows[1] + 1
-    _height < 0 && error("invalid window height")
-    rasterio!(rasterband, buffer, _width, _height, cols[1], rows[1], access,
+    _width = length(cols)
+    _width < 1 && error("invalid window width")
+    _height = length(rows)
+    _height < 1 && error("invalid window height")
+    rasterio!(rasterband, buffer, _width, _height, cols[1]-1, rows[1]-1, access,
               nPixelSpace, nLineSpace)
 end
 
@@ -263,7 +283,7 @@ end
 
 function fetch!{T <: Real}(dataset::Dataset, buffer::Array{T,3})
     checknull(dataset) && error("Can't read closed dataset")
-    _nband = nband(dataset)
+    _nband = nraster(dataset)
     @assert size(buffer, 3) == _nband
     rasterio!(dataset, buffer, collect(Cint, 1:_nband), GDAL.GF_Read)
 end
@@ -325,7 +345,7 @@ end
 function fetch(dataset::Dataset)
     checknull(dataset) && error("Can't read closed dataset")
     buffer = Array(getdatatype(fetchband(dataset, 1)),
-                   width(dataset), height(dataset), nband(dataset))
+                   width(dataset), height(dataset), nraster(dataset))
     fetch!(dataset, buffer)
 end
 
