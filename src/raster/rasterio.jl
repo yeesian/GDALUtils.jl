@@ -1,23 +1,3 @@
-# function loadbuffer!{T <: Real}(band::RasterBand, buffer::Array{T,2})
-#     rows = height(band)
-#     cols = width(band)
-#     @assert size(buffer, 1) >= rows
-#     @assert size(buffer, 2) >= cols
-#     (xbsize, ybsize) = getblocksize(band)
-#     # loop through the rows
-#     for i in 0:ybsize:(rows-1)
-#         # loop through the columns
-#         for j in 0:xbsize:(cols-1)
-#             nrows = (i + ybsize < rows) ? ybsize : rows - i
-#             ncols = (j + xbsize < cols) ? xbsize : cols - j
-#             rasterio!(band, buffer, ncols, nrows, j, i)
-#         end
-#     end
-#     buffer
-# end
-
-# loadbuffer(band::RasterBand, d::DataType = UInt8) =
-#     loadbuffer!(band, Array(d, height(band), width(band)))
 
 """
 Read/write a region of image data from multiple bands.
@@ -269,9 +249,80 @@ end
 #     ccall((:GDALRasterIOEx,libgdal),CPLErr,(Ptr{GDALRasterBandH},GDALRWFlag,Cint,Cint,Cint,Cint,Ptr{Void},Cint,Cint,GDALDataType,GSpacing,GSpacing,Ptr{GDALRasterIOExtraArg}),hRBand,eRWFlag,nDSXOff,nDSYOff,nDSXSize,nDSYSize,pBuffer,nBXSize,nBYSize,eBDataType,nPixelSpace,nLineSpace,psExtraArg)
 # end
 
+function fetch!{T <: Real}(band::RasterBand, buffer::Array{T,2})
+    checknull(band) && error("Can't read invalid rasterband")
+    rasterio!(band, buffer, GDAL.GF_Read)
+end
+
+function fetch!{T <: Real}(band::RasterBand,
+                           buffer::Array{T,2},
+                           _width::Integer,
+                           _height::Integer,
+                           xoffset::Integer,
+                           yoffset::Integer)
+    checknull(band) && error("Can't read invalid rasterband")
+    rasterio!(band, buffer, _width, _height, xoffset, yoffset)
+end
+
+function fetch!{T <: Real, U <: Integer}(band::RasterBand,
+                                         buffer::Array{T,2},
+                                         rows::UnitRange{U},
+                                         cols::UnitRange{U})
+    checknull(band) && error("Can't read invalid rasterband")
+    rasterio!(band, buffer, rows, cols)
+end
+
+function fetch(band::RasterBand)
+    checknull(band) && error("Can't read invalid rasterband")
+    rasterio!(band, Array(getdatatype(band), width(band), height(band)))
+end
+
+function fetch(band::RasterBand,
+               _width::Integer,
+               _height::Integer,
+               xoffset::Integer,
+               yoffset::Integer)
+    checknull(band) && error("Can't read invalid rasterband")
+    buffer = Array(getdatatype(band), width(band), height(band))
+    rasterio!(band, buffer, _width, _height, xoffset, yoffset)
+end
+
+
+function fetch{U <: Integer}(band::RasterBand,
+                             rows::UnitRange{U},
+                             cols::UnitRange{U})
+    checknull(band) && error("Can't read invalid rasterband")
+    buffer = Array(getdatatype(band), length(cols), length(rows))
+    rasterio!(band, buffer, rows, cols)
+end
+
+function update!{T <: Real}(band::RasterBand, buffer::Array{T,2})
+    checknull(band) && error("Can't write invalid rasterband")
+    rasterio!(band, buffer, GDAL.GF_Write)
+end
+
+function update!{T <: Real}(band::RasterBand,
+                            buffer::Array{T,2},
+                            _width::Integer,
+                            _height::Integer,
+                            xoffset::Integer,
+                            yoffset::Integer)
+    checknull(band) && error("Can't write invalid rasterband")
+    rasterio!(band, buffer, _width, _height,
+              xoffset, yoffset, GDAL.GF_Write)
+end
+
+function update!{T <: Real, U <: Integer}(band::RasterBand,
+                                          buffer::Array{T,2},
+                                          rows::UnitRange{U},
+                                          cols::UnitRange{U})
+    checknull(band) && error("Can't write invalid rasterband")
+    rasterio!(band, buffer, rows, cols, GDAL.GF_Write)
+end
+
 function fetch!{T <: Real}(dataset::Dataset, buffer::Array{T,2}, i::Integer)
     checknull(dataset) && error("Can't read closed dataset")
-    rasterio!(fetchband(dataset, i), buffer, GDAL.GF_Read)
+    fetch!(fetchband(dataset, i), buffer)
 end
 
 function fetch!{T <: Real}(dataset::Dataset,
@@ -296,16 +347,16 @@ function fetch!{T <: Real}(dataset::Dataset,
                            xoffset::Integer,
                            yoffset::Integer)
     checknull(dataset) && error("Can't read closed dataset")
-    rasterio!(fetchband(dataset, i), buffer, _width, _height, xoffset, yoffset)
+    fetch!(fetchband(dataset, i), buffer, _width, _height, xoffset, yoffset)
 end
 
 function fetch!{T <: Real}(dataset::Dataset,
-                       buffer::Array{T,3},
-                       indices::Vector{Cint},
-                       _width::Integer,
-                       _height::Integer,
-                       xoffset::Integer,
-                       yoffset::Integer)
+                           buffer::Array{T,3},
+                           indices::Vector{Cint},
+                           _width::Integer,
+                           _height::Integer,
+                           xoffset::Integer,
+                           yoffset::Integer)
     checknull(dataset) && error("Can't read closed dataset")
     rasterio!(dataset, buffer, indices, _width, _height, xoffset, yoffset)
 end
@@ -316,7 +367,7 @@ function fetch!{T <: Real, U <: Integer}(dataset::Dataset,
                                          rows::UnitRange{U},
                                          cols::UnitRange{U})
     checknull(dataset) && error("Can't read closed dataset")
-    rasterio!(fetchband(dataset, i), buffer, rows, cols)
+    fetch!(fetchband(dataset, i), buffer, rows, cols)
 end
 
 function fetch!{T <: Real, U <: Integer}(dataset::Dataset,
@@ -330,9 +381,7 @@ end
 
 function fetch(dataset::Dataset, i::Integer)
     checknull(dataset) && error("Can't read closed dataset")
-    band = fetchband(dataset, i)
-    buffer = Array(getdatatype(band), width(band), height(band))
-    rasterio!(band, buffer)
+    fetch(fetchband(dataset, i))
 end
 
 function fetch(dataset::Dataset, indices::Vector{Cint})
@@ -356,9 +405,7 @@ function fetch(dataset::Dataset,
                xoffset::Integer,
                yoffset::Integer)
     checknull(dataset) && error("Can't read closed dataset")
-    band = fetchband(dataset, i)
-    buffer = Array(getdatatype(band), width(band), height(band))
-    rasterio!(band, buffer, _width, _height, xoffset, yoffset)
+    fetch(fetchband(dataset, i), _width, _height, xoffset, yoffset)
 end
 
 function fetch{T <: Integer}(dataset::Dataset,
@@ -378,9 +425,7 @@ function fetch{U <: Integer}(dataset::Dataset,
                              rows::UnitRange{U},
                              cols::UnitRange{U})
     checknull(dataset) && error("Can't read closed dataset")
-    band = fetchband(dataset, i)
-    buffer = Array(getdatatype(band), width(band), height(band))
-    rasterio!(band, buffer, rows, cols)
+    fetch(fetchband(dataset, i), rows, cols)
 end
 
 function fetch{U <: Integer}(dataset::Dataset,
@@ -395,7 +440,7 @@ end
 
 function update!{T <: Real}(dataset::Dataset, buffer::Array{T,2}, i::Integer)
     checknull(dataset) && error("Can't write closed dataset")
-    rasterio!(fetchband(dataset, i), buffer, GDAL.GF_Write)
+    update!(fetchband(dataset, i), buffer)
 end
 
 function update!{T <: Real}(dataset::Dataset,
@@ -413,8 +458,8 @@ function update!{T <: Real}(dataset::Dataset,
                             xoffset::Integer,
                             yoffset::Integer)
     checknull(dataset) && error("Can't write closed dataset")
-    rasterio!(fetchband(dataset, i), buffer, _width, _height,
-              xoffset, yoffset, GDAL.GF_Write)
+    update!(fetchband(dataset, i), buffer, _width, _height,
+            xoffset, yoffset)
 end
 
 function update!{T <: Real}(dataset::Dataset,
@@ -435,7 +480,7 @@ function update!{T <: Real, U <: Integer}(dataset::Dataset,
                                           rows::UnitRange{U},
                                           cols::UnitRange{U})
     checknull(dataset) && error("Can't write closed dataset")
-    rasterio!(fetchband(dataset, i), buffer, rows, cols, GDAL.GF_Write)
+    update!(fetchband(dataset, i), buffer, rows, cols)
 end
 
 function update!{T <: Real, U <: Integer}(dataset::Dataset,
