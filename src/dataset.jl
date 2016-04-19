@@ -416,10 +416,12 @@ an OGRLayer containing the results of the query.
 Deallocate with ReleaseResultSet().
 """
 executesql(dataset::Dataset, query::AbstractString) =
-    FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query, C_NULL, C_NULL))
+    FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query,
+                                        Ptr{GDAL.OGRGeometryH}(C_NULL), ""))
 
 executesql(dataset::Dataset, query::AbstractString, dialect::AbstractString) =
-    FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query, C_NULL, dialect))
+    FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query,
+                                        Ptr{GDAL.OGRGeometryH}(C_NULL), dialect))
 
 function executesql(dataset::Dataset,
                   query::AbstractString,
@@ -430,7 +432,7 @@ function executesql(dataset::Dataset,
 end
 
 function executesql(f::Function, dataset::Dataset, args...)
-    result = sqlquery(dataset, args...)
+    result = executesql(dataset, args...)
     try
         f(result)
     finally
