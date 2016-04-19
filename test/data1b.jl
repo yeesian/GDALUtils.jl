@@ -45,3 +45,64 @@ GU.registerdrivers() do
         end
     end
 end
+
+# version 2
+GU.registerdrivers() do
+    GU.read("ospy/data1/sites.shp") do input
+        GU.create("tmp/hw1b.shp", "ESRI Shapefile") do output
+            # get the layer for the input data source
+            inlayer = GU.fetchlayer(input, 0)
+            # create the layer for the output data source
+            outlayer = GU.createlayer(output, "hw1b", GDAL.wkbPoint)
+
+            inlayerdefn = GU.getlayerdefn(inlayer)
+            GU.createfield(outlayer, GU.fetchfielddefn(inlayerdefn, 0))
+            GU.createfield(outlayer, GU.fetchfielddefn(inlayerdefn, 1))
+
+            # loop through the input features
+            for infeature in inlayer
+                id = GU.fetchfield(infeature, 0)
+                cover = GU.fetchfield(infeature, 1)
+                if cover == "trees"
+                    GU.createfeature(outlayer) do outfeature
+                        GU.setgeom(outfeature, GU.getgeom(infeature))
+                        GU.setfield(outfeature, 0, id)
+                        GU.setfield(outfeature, 1, cover)
+                    end
+                end
+            end
+        end
+    end
+end
+
+# version 3
+GU.registerdrivers() do
+    GU.read("ospy/data1/sites.shp") do input
+        GU.create("tmp/hw1b.shp", "ESRI Shapefile") do output
+            GU.executesql(input, """SELECT * FROM sites
+                                    WHERE cover = 'trees' """) do results
+                GU.copylayer(output, results, "hw1b")
+            end
+        end
+    end
+end;
+
+# GU.registerdrivers() do
+#     GU.read("ospy/data1/sites.shp") do input
+#         GU.create("tmp/hw1b.shp", "ESRI Shapefile") do output
+#             outlayer = GU.createlayer(output, "hw1b", GDAL.wkbPoint,
+#                                       fields=GU.fetchfielddefn(inlayer, [0,1]))
+#             for infeature in DictIterator(input)
+#                 id = infeature[:properties][0]
+#                 cover = infeature[:properties][1]
+#                 if cover == "trees"
+#                     GU.createfeature(outlayer) do outfeature
+#                         GU.setgeom(outfeature, infeature[:geom][1])
+#                         GU.setfield(outfeature, 0, id)
+#                         GU.setfield(outfeature, 1, cover)
+#                     end
+#                 end
+#             end
+#         end
+#     end
+# end
