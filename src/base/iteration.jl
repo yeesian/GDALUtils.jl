@@ -90,3 +90,19 @@ function Base.done(layer::FeatureLayer, state::Feature)
     state.ptr = ptr
     (ptr == C_NULL)
 end
+
+immutable DictIterator
+    layer::FeatureLayer
+end
+Base.start(obj::DictIterator) = Base.start(obj.layer)
+function Base.next(obj::DictIterator, f::Feature)
+    properties = Dict{Int, Any}()
+    for i in 0:(nfield(f)-1)
+        if isfieldset(f, i)
+            properties[i] = fetchfield(f, i)
+        end
+    end
+    geometries = Geometry[fetchgeomfield(f, i) for i in 0:(ngeomfield(f)-1)]
+    (Dict(:properties => properties, :geom => geometries), f)
+end
+Base.done(obj::DictIterator, f::Feature) = Base.done(obj.layer, f)
