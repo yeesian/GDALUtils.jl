@@ -86,23 +86,3 @@ GU.registerdrivers() do
         end
     end
 end;
-
-# GU.registerdrivers() do
-#     GU.read("ospy/data1/sites.shp") do input
-#         GU.create("tmp/hw1b.shp", "ESRI Shapefile") do output
-#             outlayer = GU.createlayer(output, "hw1b", GDAL.wkbPoint,
-#                                       fields=GU.fetchfielddefn(inlayer, [0,1]))
-#             for infeature in DictIterator(input)
-#                 id = infeature[:properties][0]
-#                 cover = infeature[:properties][1]
-#                 if cover == "trees"
-#                     GU.createfeature(outlayer) do outfeature
-#                         GU.setgeom(outfeature, infeature[:geom][1])
-#                         GU.setfield(outfeature, 0, id)
-#                         GU.setfield(outfeature, 1, cover)
-#                     end
-#                 end
-#             end
-#         end
-#     end
-# end
