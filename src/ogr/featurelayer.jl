@@ -146,8 +146,20 @@ function createfeature(layer::FeatureLayer, feature::Feature)
     end
 end
 
-function createfeature(f::Function, args...)
-    feature = createfeature(args...)
+createfeature(layer::FeatureLayer) = createfeature(getlayerdefn(layer))
+
+function createfeature(f::Function, layer::FeatureLayer)
+    feature = createfeature(layer)
+    try
+        f(feature)
+        createfeature(layer, feature)
+    finally
+        destroy(feature)
+    end
+end
+
+function createfeature(f::Function, featuredefn::FeatureDefn)
+    feature = createfeature(featuredefn)
     try
         f(feature)
     finally
