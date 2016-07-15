@@ -9,10 +9,10 @@ function registerdrivers(f::Function)
 end
 
 "Fetch driver by index"
-getdriver(i::Integer) = Driver(GDAL.getdriver(i-1))
+getdriver(i::Integer) = GDAL.getdriver(i-1)
 
 "Fetch a driver based on the short name (such as `GTiff`)."
-getdriver(name::AbstractString) = Driver(GDAL.getdriverbyname(name))
+getdriver(name::AbstractString) = GDAL.getdriverbyname(name)
 
 """
 Destroy a `GDALDriver`.
@@ -21,22 +21,22 @@ This is roughly equivelent to deleting the driver, but is guaranteed to take
 place in the GDAL heap. It is important this that function not be called on a
 driver that is registered with the `GDALDriverManager`.
 """
-destroy(drv::Driver) = GDAL.destroydriver(drv.ptr)
+destroy(drv::Driver) = GDAL.destroydriver(drv)
 
 "Register a driver for use."
-register(drv::Driver) = GDAL.registerdriver(drv.ptr)
+register(drv::Driver) = GDAL.registerdriver(drv)
 
 "Deregister the passed drv."
-deregister(drv::Driver) = GDAL.deregisterdriver(drv.ptr)
+deregister(drv::Driver) = GDAL.deregisterdriver(drv)
 
 "Return the list of creation options of the driver [an XML string]"
-options(drv::Driver) = GDAL.getdrivercreationoptionlist(drv.ptr)
+options(drv::Driver) = GDAL.getdrivercreationoptionlist(drv)
 
 "Return the short name of a driver (e.g. `GTiff`)"
-getshortname(drv::Driver) = GDAL.getdrivershortname(drv.ptr)
+getshortname(drv::Driver) = GDAL.getdrivershortname(drv)
 
 "Return the long name of a driver (e.g. `GeoTIFF`), or empty string."
-getlongname(drv::Driver) = GDAL.getdriverlongname(drv.ptr)
+getlongname(drv::Driver) = GDAL.getdriverlongname(drv)
 
 "Fetch the number of registered drivers."
 ndriver() = GDAL.getdrivercount()
@@ -58,8 +58,7 @@ by invoking the Identify method of each registered `GDALDriver` in turn. The
 first driver that successful identifies the file name will be returned. If all
 drivers fail then `NULL` is returned.
 """
-identifydriver(filename::AbstractString) =
-    Driver(GDAL.identifydriver(filename, C_NULL))
+identifydriver(filename::AbstractString) = GDAL.identifydriver(filename, C_NULL)
 
 """
 Validate the list of creation options that are handled by a drv.
@@ -87,6 +86,6 @@ element is a `NULL` pointer
 `CreateCopy()` method of the driver, `FALSE` otherwise.
 """
 function validate{T <: AbstractString}(drv::Driver, options::Vector{T})
-    Bool(GDAL.validatecreationoptions(drv.ptr,
+    Bool(GDAL.validatecreationoptions(drv,
                                       Ptr{Ptr{UInt8}}(pointer(options))))
 end

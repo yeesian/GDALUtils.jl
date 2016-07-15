@@ -1,5 +1,5 @@
 function Base.show(io::IO, drv::Driver)
-    if checknull(drv)
+    if drv == C_NULL
         print(io, "Null Driver")
     else
         print(io, "Driver: $(getshortname(drv))/$(getlongname(drv))")
@@ -8,7 +8,7 @@ function Base.show(io::IO, drv::Driver)
 end
 
 function Base.show(io::IO, dataset::Dataset)
-    if checknull(dataset)
+    if dataset == C_NULL
         print(io, "Closed Dataset")
     else
         nrasters = nraster(dataset)
@@ -40,7 +40,7 @@ function Base.show(io::IO, dataset::Dataset)
 end
 
 function summarize(io::IO, rasterband::RasterBand)
-    if checknull(rasterband)
+    if rasterband == C_NULL
         print(io, "Null RasterBand")
     else
         access = _access[getaccess(rasterband)]

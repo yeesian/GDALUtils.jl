@@ -6,7 +6,7 @@ GU.registerdrivers() do
         layer = GU.fetchlayer(dataset, 0)
         @fact GU.getname(layer) --> "OGRGeoJSON"
         layerbyname = GU.fetchlayer(dataset, "OGRGeoJSON")
-        @fact layerbyname.ptr --> layer.ptr
+        @fact layerbyname --> layer
         GU.resetreading(layer)
 
         featuredefn = GU.getlayerdefn(layer)

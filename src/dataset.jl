@@ -1,36 +1,3 @@
-
-# """
-#     GDALGetAccess(GDALDatasetH hDS) -> int
-# Return access flag.
-# """
-# function getaccess{T <: GDALDatasetH}(hDS::Ptr{T})
-#     ccall((:GDALGetAccess,libgdal),Cint,(Ptr{GDALDatasetH},),hDS)
-# end
-
-# """
-#     GDALFlushCache(GDALDatasetH hDS) -> void
-# Flush all write cached data to disk.
-# """
-# function flushcache{T <: GDALDatasetH}(hDS::Ptr{T})
-#     ccall((:GDALFlushCache,libgdal),Void,(Ptr{GDALDatasetH},),hDS)
-# end
-
-
-
-"""
-Close GDAL dataset.
-
-For non-shared datasets (opened with `GDALOpen()`) the dataset is closed
-using the C++ "delete" operator, recovering all dataset related resources.
-
-For shared datasets (opened with `GDALOpenShared()`) the dataset is
-dereferenced, and closed only if the referenced count has dropped below 1.
-"""
-function close(dataset::Dataset)
-    GDAL.close(dataset.ptr)
-    nullify(dataset)
-end
-
 """
 Delete named dataset.
 
@@ -43,7 +10,7 @@ single file.
 It is unwise to have open dataset handles on this dataset when it is deleted.
 """
 delete(dataset::Dataset, filename::AbstractString) =
-    GDAL.deletedataset(dataset.ptr, filename)
+    GDAL.deletedataset(dataset, filename)
 
 """
 Rename a dataset.
@@ -56,13 +23,13 @@ renamed.
 rename(dataset::Dataset,
        newname::AbstractString,
        oldname::AbstractString) =
-    GDAL.renamedataset(dataset.ptr, newname, oldname)
+    GDAL.renamedataset(dataset, newname, oldname)
 
 "Copy the files associated with a dataset."
 copyfiles(dataset::Dataset,
           newname::AbstractString,
           oldname::AbstractString) =
-    GDAL.copydatasetfiles(dataset.ptr, newname, oldname)
+    GDAL.copydatasetfiles(dataset, newname, oldname)
 
 """
 Copy all dataset raster data.
@@ -83,8 +50,7 @@ target dataset block sizes to achieve best compression. More options may be
 supported in the future.
 """
 copywholeraster(source::Dataset, dest::Dataset) =
-    GDAL.datasetcopywholeraster(source.ptr, dest.ptr,
-                                Ptr{Ptr{UInt8}}(pointer(C_NULL)),
+    GDAL.datasetcopywholeraster(source, dest, Ptr{Ptr{UInt8}}(pointer(C_NULL)),
                                 Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL)
 
 """
@@ -129,52 +95,45 @@ avoid prior destruction of existing dataset.
 ### Returns
 a pointer to the newly created dataset (may be read-only access).
 """
-function createcopy(filename::AbstractString,
-                    dataset::Dataset,
-                    driver::Driver,
-                    strict::Bool = false)
-    Dataset(GDAL.createcopy(driver.ptr, filename, dataset.ptr, strict,
-                            C_NULL, Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL))
-end
+createcopy(filename::AbstractString, dataset::Dataset, driver::Driver,
+           strict::Bool = false) =
+    GDAL.createcopy(driver, filename, dataset, strict, C_NULL,
+                    Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL)
 
 function createcopy(f::Function, args...)
     ds = createcopy(args...)
     try
         f(ds)
     finally
-        close(ds)
+        GDAL.close(ds)
     end
 end
 
-function create(filename::AbstractString,
-                driver::Driver,
-                width::Integer = 0,
-                height::Integer = 0,
-                nbands::Integer = 0,
-                dtype::DataType = Any,
-                options::Vector{ASCIIString} = Vector{ASCIIString}())
-    Dataset(GDAL.create(driver.ptr, filename,
-                        width, height, nbands, _gdaltype[dtype],
-                        Ptr{Ptr{UInt8}}(C_NULL)))
-end
+create(filename::AbstractString,
+       driver::Driver,
+       width::Integer = 0,
+       height::Integer = 0,
+       nbands::Integer = 0,
+       dtype::DataType = Any,
+       options::Vector{ASCIIString} = Vector{ASCIIString}()) =
+    GDAL.create(driver, filename, width, height, nbands,
+                _gdaltype[dtype], Ptr{Ptr{UInt8}}(C_NULL))
 
-function create(filename::AbstractString,
-                drivername::AbstractString,
-                width::Integer = 0,
-                height::Integer = 0,
-                nbands::Integer = 0,
-                dtype::DataType = Any)
-    Dataset(GDAL.create(GDAL.getdriverbyname(drivername), filename,
-                        width, height, nbands, _gdaltype[dtype],
-                        Ptr{Ptr{UInt8}}(C_NULL)))
-end
+create(filename::AbstractString,
+       drivername::AbstractString,
+       width::Integer = 0,
+       height::Integer = 0,
+       nbands::Integer = 0,
+       dtype::DataType = Any) =
+    GDAL.create(getdriver(drivername), filename, width, height, 
+                nbands, _gdaltype[dtype], Ptr{Ptr{UInt8}}(C_NULL))
 
 function create(f::Function, args...)
     ds = create(args...)
     try
         f(ds)
     finally
-        close(ds)
+        GDAL.close(ds)
     end
 end
 
@@ -219,12 +178,10 @@ drivers support only read only access.
 """
 function read(filename::AbstractString, shared::Bool = false)
     if shared
-        dataset = GDAL.openshared(filename, GDAL.GA_ReadOnly)
+        return GDAL.openshared(filename, GDAL.GA_ReadOnly)
     else
-        dataset = GDAL.openex(filename, GDAL.GA_ReadOnly,
-                              C_NULL, C_NULL, C_NULL)
+        return GDAL.openex(filename, GDAL.GA_ReadOnly, C_NULL, C_NULL, C_NULL)
     end
-    Dataset(dataset)
 end
 
 function read(f::Function, args...)
@@ -232,17 +189,16 @@ function read(f::Function, args...)
     try
         f(ds)
     finally
-        close(ds)
+        GDAL.close(ds)
     end
 end
 
 function update(filename::AbstractString, shared::Bool = false)
     if shared
-        dataset = GDAL.openshared(filename, GDAL.GA_Update)
+        return GDAL.openshared(filename, GDAL.GA_Update)
     else
-        dataset = GDAL.openex(filename, GDAL.GA_Update, C_NULL, C_NULL, C_NULL)
+        return GDAL.openex(filename, GDAL.GA_Update, C_NULL, C_NULL, C_NULL)
     end
-    Dataset(dataset)
 end
 
 function update(f::Function, args...)
@@ -250,31 +206,31 @@ function update(f::Function, args...)
     try
         f(ds)
     finally
-        close(ds)
+        GDAL.close(ds)
     end
 end
 
 function write(filename::AbstractString,
                dataset::Dataset,
                strict::Bool = false)
-    checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(filename, dataset, getdriver(dataset), strict))
+    (dataset == C_NULL) && error("Can't write closed dataset")
+    GDAL.close(createcopy(filename, dataset, getdriver(dataset), strict))
 end
 
 function write(dataset::Dataset,
                filename::AbstractString,
                driver::Driver,
                strict::Bool = false)
-    checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(filename, dataset, driver, strict))
+    (dataset == C_NULL) && error("Can't write closed dataset")
+    GDAL.close(createcopy(filename, dataset, driver, strict))
 end
 
 function write(dataset::Dataset,
                filename::AbstractString,
                drivername::AbstractString,
                strict::Bool = false)
-    checknull(dataset) && error("Can't write closed dataset")
-    close(createcopy(filename, dataset, getdriver(name), strict))
+    (dataset == C_NULL) && error("Can't write closed dataset")
+    GDAL.close(createcopy(filename, dataset, getdriver(name), strict))
 end
 
 function write(f::Function, args...)
@@ -282,24 +238,24 @@ function write(f::Function, args...)
     try
         f(ds)
     finally
-        close(ds)
+        GDAL.close(ds)
     end
 end
 
 "Fetch raster width in pixels."
-width(dataset::Dataset) = GDAL.getrasterxsize(dataset.ptr)
+width(dataset::Dataset) = GDAL.getrasterxsize(dataset)
 
 "Fetch raster height in pixels."
-height(dataset::Dataset) = GDAL.getrasterysize(dataset.ptr)
+height(dataset::Dataset) = GDAL.getrasterysize(dataset)
 
 "Fetch the number of raster bands on this dataset."
-nraster(dataset::Dataset) = GDAL.getrastercount(dataset.ptr)
+nraster(dataset::Dataset) = GDAL.getrastercount(dataset)
 
 "Fetch the number of feature layers on this dataset."
-nlayer(dataset::Dataset) = GDAL.datasetgetlayercount(dataset.ptr)
+nlayer(dataset::Dataset) = GDAL.datasetgetlayercount(dataset)
 
 "Fetch the driver that the dataset was created with"
-getdriver(dataset::Dataset) = Driver(GDAL.getdatasetdriver(dataset.ptr))
+getdriver(dataset::Dataset) = GDAL.getdatasetdriver(dataset)
 
 """
 Add a band to a dataset.
@@ -317,10 +273,10 @@ as the newest band will always be the last band.
 are format specific. `NULL` may be passed by default.
 """
 addband(dataset::Dataset, eType::GDAL.GDALDataType) =
-    GDAL.addband(dataset.ptr, eType, C_NULL)
+    GDAL.addband(dataset, eType, C_NULL)
 
 addband(dataset::Dataset, eType::GDAL.GDALDataType) =
-    GDAL.addband(dataset.ptr, eType, Ptr{Ptr{UInt8}}(C_NULL))
+    GDAL.addband(dataset, eType, Ptr{Ptr{UInt8}}(C_NULL))
 
 """
 Fetch files forming dataset.
@@ -334,15 +290,14 @@ The returned filenames will normally be relative or absolute paths depending on
 the path used to originally open the dataset. The strings will be UTF-8 encoded
 """
 filelist(dataset::Dataset) =
-    loadstringlist(GDAL.C.GDALGetFileList(Ptr{Void}(dataset.ptr)))
+    loadstringlist(GDAL.C.GDALGetFileList(Ptr{Void}(dataset)))
 
 "Fetch a layer by index (between 0 and GetLayerCount()-1)"
-fetchlayer(dataset::Dataset, i::Integer) =
-    FeatureLayer(GDAL.datasetgetlayer(dataset.ptr, i))
+fetchlayer(dataset::Dataset, i::Integer) = GDAL.datasetgetlayer(dataset, i)
 
 "Fetch a feature layer for a dataset from its name"
 fetchlayer(dataset::Dataset, name::AbstractString) =
-    FeatureLayer(GDAL.datasetgetlayerbyname(dataset.ptr, name))
+    GDAL.datasetgetlayerbyname(dataset, name)
 
 """
 Delete the indicated layer (at index i) from the datasource.
@@ -352,7 +307,7 @@ OGRERR_NONE on success, or OGRERR_UNSUPPORTED_OPERATION if deleting layers
 is not supported for this datasource.
 """
 function deletelayer(dataset::Dataset, i::Integer)
-    result = GDAL.datasetdeletelayer(dataset.ptr, i)
+    result = GDAL.datasetdeletelayer(dataset, i)
     if result != GDAL.OGRERR_NONE
         error("Failed to delete layer")
     end
@@ -372,20 +327,13 @@ name, coordinate system, geometry type.
     constraints on the types geometry to be written.
 * **papszOptions**: a StringList of name=value (driver-specific) options.
 """
-function createlayer(dataset::Dataset,
-                     name::AbstractString,
-                     geomtype::GDAL.OGRwkbGeometryType = GDAL.wkbUnknown)
-    FeatureLayer(GDAL.datasetcreatelayer(dataset.ptr, name, Ptr{GDAL.OGRSpatialReferenceH}(C_NULL),
-                                         geomtype, C_NULL))
-end
+createlayer(dataset::Dataset, name::AbstractString,
+            geomtype::GDAL.OGRwkbGeometryType = GDAL.wkbUnknown) =
+    GDAL.datasetcreatelayer(dataset, name, SpatialRef(C_NULL), geomtype, C_NULL)
 
-function createlayer(dataset::Dataset,
-                     name::AbstractString,
-                     spatialref::SpatialRef,
-                     geomtype::GDAL.OGRwkbGeometryType = GDAL.wkbUnknown)
-    FeatureLayer(GDAL.datasetcreatelayer(dataset.ptr, name, spatialref.ptr,
-                                         geomtype, C_NULL))
-end
+createlayer(dataset::Dataset, name::AbstractString, spatialref::SpatialRef,
+            geomtype::GDAL.OGRwkbGeometryType = GDAL.wkbUnknown) =
+    GDAL.datasetcreatelayer(dataset, name, spatialref, geomtype, C_NULL)
 
 """
 Duplicate an existing layer.
@@ -397,7 +345,7 @@ Duplicate an existing layer.
 * **papszOptions**: a StringList of name=value (driver-specific) options.
 """
 copylayer(dataset::Dataset,layer::FeatureLayer, name::AbstractString) =
-    FeatureLayer(GDAL.datasetcopylayer(dataset.ptr, layer.ptr, name, C_NULL))
+    GDAL.datasetcopylayer(dataset, layer, name, C_NULL)
 
 """
 Execute an SQL statement against the data store.
@@ -416,20 +364,14 @@ an OGRLayer containing the results of the query.
 Deallocate with ReleaseResultSet().
 """
 executesql(dataset::Dataset, query::AbstractString) =
-    FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query,
-                                        Ptr{GDAL.OGRGeometryH}(C_NULL), ""))
+    GDAL.datasetexecutesql(dataset, query, Geometry(C_NULL), "")
 
 executesql(dataset::Dataset, query::AbstractString, dialect::AbstractString) =
-    FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query,
-                                        Ptr{GDAL.OGRGeometryH}(C_NULL), dialect))
+    GDAL.datasetexecutesql(dataset, query, Geometry(C_NULL), dialect)
 
-function executesql(dataset::Dataset,
-                  query::AbstractString,
-                  spatialfilter::Geometry,
-                  dialect::AbstractString)
-    FeatureLayer(GDAL.datasetexecutesql(dataset.ptr, query, spatialfilter.ptr,
-                                        dialect))
-end
+executesql(dataset::Dataset, query::AbstractString, spatialfilter::Geometry,
+           dialect::AbstractString) =
+    GDAL.datasetexecutesql(dataset, query, spatialfilter, dialect)
 
 function executesql(f::Function, dataset::Dataset, args...)
     result = executesql(dataset, args...)
@@ -448,7 +390,7 @@ Release results of ExecuteSQL().
 * **layer**: the result of a previous ExecuteSQL() call.
 """
 releaseresultset(dataset::Dataset, layer::FeatureLayer) =
-    GDAL.datasetreleaseresultset(dataset.ptr, layer.ptr)
+    GDAL.datasetreleaseresultset(dataset, layer)
 
 """
 Fetch the affine transformation coefficients.
@@ -477,23 +419,22 @@ transformation to projection coordinates.
 """
 function getgeotransform!(dataset::Dataset, transform::Vector{Cdouble})
     @assert length(transform) == 6
-    result = GDAL.getgeotransform(dataset.ptr, pointer(transform))
-    (result == GDAL.CE_Failure) && error("Failed to get geotransform from raster")
+    result = GDAL.getgeotransform(dataset, pointer(transform))
+    (result == GDAL.CE_Failure) && error("Failed to get geotransform")
     transform
 end
 
-getgeotransform(dataset::Dataset) =
-    getgeotransform!(dataset, Array(Cdouble, 6))
+getgeotransform(dataset::Dataset) = getgeotransform!(dataset, Array(Cdouble, 6))
 
 "Set the affine transformation coefficients."
 function setgeotransform!(dataset::Dataset, transform::Vector{Cdouble})
     @assert length(transform) == 6
-    result = GDAL.setgeotransform(dataset.ptr, pointer(transform))
+    result = GDAL.setgeotransform(dataset, pointer(transform))
     (result == GDAL.CE_Failure) && error("Failed to transform raster dataset")
 end
 
 "Get number of GCPs for this dataset. Zero if there are none."
-ngcp(dataset::Dataset) = GDAL.getgcpcount(dataset.ptr)
+ngcp(dataset::Dataset) = GDAL.getgcpcount(dataset)
 
 """
 Fetch the projection definition string for this dataset in OpenGIS WKT format.
@@ -504,11 +445,11 @@ returned.
 
 See also: http://www.gdal.org/ogr/osr_tutorial.html
 """
-getproj(dataset::Dataset) = GDAL.getprojectionref(dataset.ptr)
+getproj(dataset::Dataset) = GDAL.getprojectionref(dataset)
 
 "Set the projection reference string for this dataset."
 function setproj(dataset::Dataset, projstring::AbstractString)
-    result = GDAL.setprojection(dataset.ptr, projstring)
+    result = GDAL.setprojection(dataset, projstring)
     (result == GDAL.CE_Failure) && error("Could not set projection")
 end
 
@@ -564,10 +505,9 @@ call could be made:
                               GDALDummyProgress, NULL );
 ```
 """
-function buildoverviews(dataset::Dataset,
-                        overviewlist::Vector{Cint},
+function buildoverviews(dataset::Dataset, overviewlist::Vector{Cint},
                         resampling::AbstractString = "NEAREST")
-    result = GDAL.buildoverviews(dataset.ptr, resampling, length(overviewlist),
+    result = GDAL.buildoverviews(dataset, resampling, length(overviewlist),
                                  overviewlist, 0, C_NULL,
                                  Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL)
     (result == GDAL.CE_Failure) && error("Failed to build overviews")
@@ -577,7 +517,7 @@ function buildoverviews(dataset::Dataset,
                         overviewlist::Vector{Cint},
                         bandlist::Vector{Cint} = Cint[],
                         resampling::AbstractString = "NEAREST")
-    result = GDAL.buildoverviews(dataset.ptr, resampling, length(overviewlist),
+    result = GDAL.buildoverviews(dataset, resampling, length(overviewlist),
                                  overviewlist, length(bandlist), bandlist,
                                  Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL)
     (result == GDAL.CE_Failure) && error("Failed to build overviews")
@@ -621,7 +561,7 @@ See also: http://trac.osgeo.org/gdal/wiki/rfc15_nodatabitmask
 `CE_None` on success or `CE_Failure` on an error.
 """
 function createdatasetmaskband(dataset::Dataset)
-    result = GDAL.createdatasetmaskband(dataset.ptr)
+    result = GDAL.createdatasetmaskband(dataset)
     (result == GDAL.CE_Failure) && error("Failed to create dataset mask band")
 end
 
@@ -634,7 +574,7 @@ The projection string follows the normal rules from `GetProjectionRef()`.
 internal projection string or `""` if there are no GCPs. It should not be
 altered, freed or expected to last for long.
 """
-getgcpproj(dataset::Dataset) = GDAL.getgcpprojection(dataset.ptr)
+getgcpproj(dataset::Dataset) = GDAL.getgcpprojection(dataset)
 
 # """
 # Fetch GCPs.

@@ -78,16 +78,15 @@ Base.done(obj::BufferIterator, iter::Int) = Base.done(obj.w, iter)
 # Base.next(fc::FeatureDataset, i::Int) = (fetchlayer(fc.dataset, i), i+1)
 # Base.done(fc::FeatureDataset, i::Int) = (i > fc.nlayers)
 
-Base.start(layer::FeatureLayer) = Feature(C_NULL)
-Base.next(layer::FeatureLayer, state::Feature) = (state, state)
+Base.start(layer::FeatureLayer) = [Feature(0)]
+Base.next(layer::FeatureLayer, state::Vector{Feature}) = (state[1], state)
 Base.eltype(layer::FeatureLayer) = Feature
 Base.length(layer::FeatureLayer) = nfeature(layer, true)
 
-function Base.done(layer::FeatureLayer, state::Feature)
-    destroy(state)
-    ptr = ccall((:OGR_L_GetNextFeature,GDAL.libgdal),
-                Ptr{GDAL.OGRFeatureH},(Ptr{GDAL.OGRLayerH},),layer.ptr)
-    state.ptr = ptr
+function Base.done(layer::FeatureLayer, state::Vector{Feature})
+    destroy(state[1])
+    ptr = ccall((:OGR_L_GetNextFeature,GDAL.libgdal), Feature,(FeatureLayer,),layer)
+    state[1] = ptr
     (ptr == C_NULL)
 end
 
@@ -95,7 +94,8 @@ immutable DictIterator
     layer::FeatureLayer
 end
 Base.start(obj::DictIterator) = Base.start(obj.layer)
-function Base.next(obj::DictIterator, f::Feature)
+function Base.next(obj::DictIterator, vf::Vector{Feature})
+    f = vf[1]
     properties = Dict{Int, Any}()
     for i in 0:(nfield(f)-1)
         if isfieldset(f, i)
@@ -103,6 +103,6 @@ function Base.next(obj::DictIterator, f::Feature)
         end
     end
     geometries = Geometry[fetchgeomfield(f, i) for i in 0:(ngeomfield(f)-1)]
-    (Dict(:properties => properties, :geom => geometries), f)
+    (Dict(:properties => properties, :geom => geometries), vf)
 end
-Base.done(obj::DictIterator, f::Feature) = Base.done(obj.layer, f)
+Base.done(obj::DictIterator, f::Vector{Feature}) = Base.done(obj.layer, f)

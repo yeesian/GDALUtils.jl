@@ -1,13 +1,13 @@
 
 "Return the layer name."
-getname(layer::FeatureLayer) = GDAL.getname(layer.ptr)
+getname(layer::FeatureLayer) = GDAL.getname(layer)
 
 "Return the layer geometry type."
-getgeomtype(layer::FeatureLayer) = GDAL.getgeomtype(layer.ptr)
+getgeomtype(layer::FeatureLayer) = GDAL.getgeomtype(layer)
 
 "Returns the current spatial filter for this layer."
 getspatialfilter(layer::FeatureLayer) =
-    Geometry(GDAL.getspatialfilter(layer.ptr))
+    GDAL.getspatialfilter(layer)
 
 # """
 #     OGR_L_GetSpatialRef(OGRLayerH) -> OGRSpatialReferenceH
@@ -24,12 +24,12 @@ getspatialfilter(layer::FeatureLayer) =
 
 "Set a new spatial filter for the layer, using the geom."
 setspatialfilter(layer::FeatureLayer, geom::Geometry) = 
-    GDAL.setspatialfilter(layer.ptr, geom.ptr)
+    GDAL.setspatialfilter(layer, geom)
 
 "Set a new rectangular spatial filter for the layer."
 setspatialfilter(layer::FeatureLayer,
                  xmin::Real, ymin::Real, xmax::Real, ymax::Real) = 
-    GDAL.setspatialfilterrect(layer.ptr, xmin, ymin, xmax, ymax)
+    GDAL.setspatialfilterrect(layer, xmin, ymin, xmax, ymax)
 
 """
 Set a new spatial filter.
@@ -42,10 +42,10 @@ Set a new spatial filter.
     no new one instituted.
 """
 setspatialfilter(layer::FeatureLayer, index::Integer, geom::Geometry) = 
-    GDAL.setspatialfilterex(layer.ptr, index, geom.ptr)
+    GDAL.setspatialfilterex(layer, index, geom)
 
 clearspatialfilter(layer::FeatureLayer, index::Integer) = 
-    GDAL.setspatialfilterex(layer.ptr, index, C_NULL)
+    GDAL.setspatialfilterex(layer, index, C_NULL)
 
 """
 Set a new rectangular spatial filter.
@@ -59,7 +59,7 @@ Set a new rectangular spatial filter.
 """
 setspatialfilter(layer::FeatureLayer, index::Integer,
                  xmin::Real, ymin::Real, xmax::Real, ymax::Real) = 
-    GDAL.setspatialfilterrectex(layer.ptr, index, xmin, ymin, xmax, ymax)
+    GDAL.setspatialfilterrectex(layer, index, xmin, ymin, xmax, ymax)
 
 """
     OGR_L_SetAttributeFilter(OGRLayerH,
@@ -72,16 +72,15 @@ Set a new attribute query.
 OGRERR_NONE if successfully installed, or an error code if the query expression is in error, or some other failure occurs.
 """
 function setattributefilter(layer::FeatureLayer, query::AbstractString)
-    result = GDAL.setattributefilter(layer.ptr, query)
+    result = GDAL.setattributefilter(layer, query)
     (result != GDAL.OGRERR_NONE) && error("Failed to set a new attribute query")
 end
 
 "Reset feature reading to start on the first feature."
-resetreading(layer::FeatureLayer) = GDAL.resetreading(layer.ptr)
+resetreading(layer::FeatureLayer) = GDAL.resetreading(layer)
 
 "Fetch the next available feature from this layer."
-fetchnextfeature(layer::FeatureLayer) =
-    Feature(GDAL.getnextfeature(layer.ptr))
+fetchnextfeature(layer::FeatureLayer) = GDAL.getnextfeature(layer)
 
 function fetchnextfeature(f::Function, args...)
     feature = fetchnextfeature(args...)
@@ -100,7 +99,7 @@ end
 OGRERR_NONE on success or an error code.
 """
 function setnextbyindex(layer::FeatureLayer, i::Integer)
-    result = GDAL.setnextbyindex(layer.ptr, i)
+    result = GDAL.setnextbyindex(layer, i)
     if result != GDAL.OGRERR_NONE
         error("Failed to move the cursor to index $i")
     end
@@ -108,7 +107,7 @@ end
 
 "Fetch a feature (now owned by the caller) by its identifier."
 fetchfeature(layer::FeatureLayer, i::Integer) =
-    Feature(GDAL.getfeature(layer.ptr, i))
+    GDAL.getfeature(layer, i)
 
 function fetchfeature(f::Function, args...)
     feature = fetchfeature(args...)
@@ -127,7 +126,7 @@ OGRERR_NONE if the operation works, otherwise an appropriate error code
 (e.g OGRERR_NON_EXISTING_FEATURE if the feature does not exist).
 """
 function setfeature(layer::FeatureLayer, feature::Feature)
-    result = GDAL.setfeature(layer.ptr, feature.ptr)
+    result = GDAL.setfeature(layer, feature)
     if result != GDAL.OGRERR_NONE
         error("Failed to set feature.")
     end
@@ -140,7 +139,7 @@ Create and write a new feature within a layer.
 OGRERR_NONE on success.
 """
 function createfeature(layer::FeatureLayer, feature::Feature)
-    result = GDAL.createfeature(layer.ptr, feature.ptr)
+    result = GDAL.createfeature(layer, feature)
     if result != GDAL.OGRERR_NONE
         error("Failed to create and write feature.")
     end
@@ -175,7 +174,7 @@ OGRERR_NONE if the operation works, otherwise an appropriate error code
 (e.g OGRERR_NON_EXISTING_FEATURE if the feature does not exist).
 """
 function deletefeature(layer::FeatureLayer, i::Integer)
-    result = GDAL.deletefeature(layer.ptr, i)
+    result = GDAL.deletefeature(layer, i)
     if result != GDAL.OGRERR_NONE
         error("Failed to delete feature $i.")
     end
@@ -189,7 +188,7 @@ OGRERR_NONE if successful, or OGR_UNSUPPORTED_GEOMETRY_TYPE if the geometry
 type is illegal for the OGRFeatureDefn (checking not yet implemented).
 """
 function setgeomdirectly(feature::Feature, geom::Geometry)
-    result = GDAL.setgeometrydirectly(feature.ptr, geom.ptr)
+    result = GDAL.setgeometrydirectly(feature, geom)
     if result != GDAL.OGRERR_NONE
         error("Failed to set feature geometry.")
     end
@@ -206,7 +205,7 @@ OGRERR_NONE if successful, or OGR_UNSUPPORTED_GEOMETRY_TYPE if the geometry
 type is illegal for the OGRFeatureDefn (checking not yet implemented).
 """
 function setgeom(feature::Feature, geom::Geometry)
-    result = GDAL.setgeometry(feature.ptr, geom.ptr)
+    result = GDAL.setgeometry(feature, geom)
     if result != GDAL.OGRERR_NONE
         error("Failed to set feature geometry.")
     end
@@ -218,24 +217,18 @@ Fetch an handle to feature geometry.
 ### Returns
 an handle to internal feature geometry. This object should not be modified.
 """
-getgeom(feature::Feature) = Geometry(GDAL.getgeometryref(feature.ptr))
-
-"Take away ownership of geometry."
-stealgeometry(feature::Feature) = Geometry(GDAL.stealgeometry(feature.ptr))
-
-"Duplicate feature."
-clone(feature::Feature) = Feature(GDAL.clone(feature.ptr))
+getgeom(feature::Feature) = GDAL.getgeometryref(feature)
 
 "Test if two features are the same."
 equal(feature1::Feature, feature2::Feature) =
-    Bool(GDAL.equal(feature1.ptr, feature2.ptr))
+    Bool(GDAL.equal(feature1, feature2))
 
 """
 Fetch number of fields on this feature.
 
 This will always be the same as the field count for the OGRFeatureDefn.
 """
-nfield(feature::Feature) = GDAL.getfieldcount(feature.ptr)
+nfield(feature::Feature) = GDAL.getfieldcount(feature)
 
 """
 Fetch definition for this field.
@@ -248,8 +241,7 @@ Fetch definition for this field.
 an handle to the field definition (from the OGRFeatureDefn). This is an
 internal reference, and should not be deleted or modified.
 """
-fetchfielddefn(feature::Feature, i::Integer) =
-    FieldDefn(GDAL.getfielddefnref(feature.ptr, i))
+fetchfielddefn(feature::Feature, i::Integer) = GDAL.getfielddefnref(feature, i)
 
 fetchfields(feature::Feature) =
     Dict([getname(fetchfielddefn(feature, i-1)) => fetchfield(feature, i-1)
@@ -283,7 +275,7 @@ Fetch the field index given field name.
 the field index, or -1 if no matching field is found.
 """
 getfieldindex(feature::Feature, name::AbstractString) =
-    GDAL.getfieldindex(feature.ptr, name)
+    GDAL.getfieldindex(feature, name)
 
 """Test if a field has ever been assigned a value or not.
 
@@ -292,7 +284,7 @@ getfieldindex(feature::Feature, name::AbstractString) =
 * **i**: the field to fetch, from 0 to GetFieldCount()-1.
 """
 isfieldset(feature::Feature, i::Integer) =
-    Bool(GDAL.isfieldset(feature.ptr, i))
+    Bool(GDAL.isfieldset(feature, i))
 
 """
 Clear a field, marking it as unset.
@@ -301,7 +293,7 @@ Clear a field, marking it as unset.
 * **feature**: the feature that owned the field.
 * **i**: the field to fetch, from 0 to GetFieldCount()-1.
 """
-unsetfield(feature::Feature, i::Integer) = GDAL.unsetfield(feature.ptr, i)
+unsetfield(feature::Feature, i::Integer) = GDAL.unsetfield(feature, i)
 
 # """
 #     OGR_F_GetRawFieldRef(OGRFeatureH hFeat,
@@ -323,7 +315,7 @@ unsetfield(feature::Feature, i::Integer) = GDAL.unsetfield(feature.ptr, i)
 * **feature**: the feature that owned the field.
 * **i**: the field to fetch, from 0 to GetFieldCount()-1.
 """
-asint(feature::Feature, i::Integer) = GDAL.getfieldasinteger(feature.ptr, i)
+asint(feature::Feature, i::Integer) = GDAL.getfieldasinteger(feature, i)
 
 """Fetch field value as integer 64 bit.
 
@@ -331,7 +323,7 @@ asint(feature::Feature, i::Integer) = GDAL.getfieldasinteger(feature.ptr, i)
 * **feature**: the feature that owned the field.
 * **i**: the field to fetch, from 0 to GetFieldCount()-1.
 """
-asint64(feature::Feature, i::Integer) = GDAL.getfieldasinteger64(feature.ptr, i)
+asint64(feature::Feature, i::Integer) = GDAL.getfieldasinteger64(feature, i)
 
 """Fetch field value as a double.
 
@@ -339,7 +331,7 @@ asint64(feature::Feature, i::Integer) = GDAL.getfieldasinteger64(feature.ptr, i)
 * **feature**: the feature that owned the field.
 * **i**: the field to fetch, from 0 to GetFieldCount()-1.
 """
-asdouble(feature::Feature, i::Integer) = GDAL.getfieldasdouble(feature.ptr, i)
+asdouble(feature::Feature, i::Integer) = GDAL.getfieldasdouble(feature, i)
 
 """
 Fetch field value as a string.
@@ -348,7 +340,7 @@ Fetch field value as a string.
 * **feature**: the feature that owned the field.
 * **i**: the field to fetch, from 0 to GetFieldCount()-1.
 """
-asstring(feature::Feature, i::Integer) = GDAL.getfieldasstring(feature.ptr, i)
+asstring(feature::Feature, i::Integer) = GDAL.getfieldasstring(feature, i)
 
 # """
 #     OGR_F_GetFieldAsIntegerList(OGRFeatureH hFeat,
@@ -518,7 +510,7 @@ Set field to integer value.
 * **value**: the value to assign.
 """
 setfield(feature::Feature, i::Integer, value::Integer) =
-    GDAL.setfieldinteger(feature.ptr, i, value)
+    GDAL.setfieldinteger(feature, i, value)
 
 """
 Set field to 64 bit integer value.
@@ -529,7 +521,7 @@ Set field to 64 bit integer value.
 * **value**: the value to assign.
 """
 setfield(feature::Feature, i::Integer, value::Int64) =
-    GDAL.setfieldinteger64(feature.ptr, i, value)
+    GDAL.setfieldinteger64(feature, i, value)
 
 """
 Set field to double value.
@@ -540,7 +532,7 @@ Set field to double value.
 * **value**: the value to assign.
 """
 setfield(feature::Feature, i::Integer, value::Cdouble) =
-    GDAL.setfielddouble(feature.ptr, i, value)
+    GDAL.setfielddouble(feature, i, value)
 
 """
 Set field to string value.
@@ -551,7 +543,7 @@ Set field to string value.
 * **value**: the value to assign.
 """
 setfield(feature::Feature, i::Integer, value::AbstractString) =
-    GDAL.setfieldstring(feature.ptr, i, value)
+    GDAL.setfieldstring(feature, i, value)
 
 # """
 #     OGR_F_SetFieldIntegerList(OGRFeatureH hFeat,
@@ -710,7 +702,7 @@ Fetch number of geometry fields on this feature.
 
 This will always be the same as the geometry field count for OGRFeatureDefn.
 """
-ngeomfield(feature::Feature) = GDAL.getgeomfieldcount(feature.ptr)
+ngeomfield(feature::Feature) = GDAL.getgeomfieldcount(feature)
 
 """
 Fetch definition for this geometry field.
@@ -724,7 +716,7 @@ The field definition (from the OGRFeatureDefn). This is an
 internal reference, and should not be deleted or modified.
 """
 fetchgeomfielddefn(feature::Feature, i::Integer) =
-    GeomFieldDefn(GDAL.getgeomfielddefnref(feature.ptr, i))
+    GDAL.getgeomfielddefnref(feature, i)
 
 """
 Fetch the geometry field index given geometry field name.
@@ -737,7 +729,7 @@ Fetch the geometry field index given geometry field name.
 the geometry field index, or -1 if no matching geometry field is found.
 """
 getgeomfieldindex(feature::Feature, name::AbstractString) =
-    GDAL.getgeomfieldindex(feature.ptr, i)
+    GDAL.getgeomfieldindex(feature, i)
 
 """
 Fetch the feature geometry.
@@ -750,7 +742,7 @@ Fetch the feature geometry.
 an internal feature geometry. This object should not be modified.
 """
 fetchgeomfield(feature::Feature, i::Integer) =
-    Geometry(GDAL.getgeomfieldref(feature.ptr, i))
+    GDAL.getgeomfieldref(feature, i)
 
 """
 Set feature geometry of a specified geometry field.
@@ -766,7 +758,7 @@ or OGR_UNSUPPORTED_GEOMETRY_TYPE if the geometry type is illegal for
 the OGRFeatureDefn (checking not yet implemented).
 """
 function setgeomfielddirectly(feature::Feature, i::Integer, geom::Geometry)
-    result = GDAL.setgeomfielddirectly(feature.ptr, i, geom.ptr)
+    result = GDAL.setgeomfielddirectly(feature, i, geom)
     if result != GDAL.OGRERR_NONE
         error("Failed to set feature geometry")
     end
@@ -786,7 +778,7 @@ or OGR_UNSUPPORTED_GEOMETRY_TYPE if the geometry type is illegal for
 the OGRFeatureDefn (checking not yet implemented).
 """
 function setgeomfield(feature::Feature, i::Integer, geom::Geometry)
-    GDAL.setgeomfield(feature.ptr, i, geom.ptr)
+    GDAL.setgeomfield(feature, i, geom)
 end
 
 """
@@ -795,7 +787,7 @@ Get feature identifier.
 ### Returns
 feature id or OGRNullFID if none has been assigned.
 """
-getfid(feature::Feature) = GDAL.getfid(feature.ptr)
+getfid(feature::Feature) = GDAL.getfid(feature)
 
 """
 Set the feature identifier.
@@ -808,7 +800,7 @@ Set the feature identifier.
 On success OGRERR_NONE, or on failure some other value.
 """
 function setfid(feature::Feature, i::Integer)
-    result = GDAL.setfid(feature.ptr, i)
+    result = GDAL.setfid(feature, i)
     if result != GDAL.OGRERR_NONE
         error("Failed to set FID")
     end
@@ -842,7 +834,7 @@ OGRERR_NONE if the operation succeeds, even if some values are not transferred,
 otherwise an error code.
 """
 function setfrom(feature1::Feature, feature2::Feature, forgiving::Bool=false)
-    result = GDAL.setfrom(feature1.ptr, feature2.ptr, forgiving)
+    result = GDAL.setfrom(feature1, feature2, forgiving)
     if result != GDAL.OGRERR_NONE
         error("Failed to set feature")
     end
@@ -867,7 +859,7 @@ otherwise an error code.
 """
 function setfrom(feature1::Feature, feature2::Feature, indices::Vector{Cint},
                  forgiving::Bool=false)
-    result = GDAL.setfromwithmap(feature1.ptr, feature2.ptr, forgiving, pointer(indices))
+    result = GDAL.setfromwithmap(feature1, feature2, forgiving, pointer(indices))
     if result != GDAL.OGRERR_NONE
         error("Failed to set feature with map")
     end
@@ -875,15 +867,15 @@ end
 
 
 "Fetch style string for this feature."
-getstylestring(feature::Feature) = GDAL.getstylestring(feature.ptr)
+getstylestring(feature::Feature) = GDAL.getstylestring(feature)
 
 "Set feature style string."
 setstylestring(feature::Feature, style::AbstractString) =
-    GDAL.setstylestring(feature.ptr, style)
+    GDAL.setstylestring(feature, style)
 
 "Set feature style string."
 setstylestringdirectly(feature::Feature, style::AbstractString) =
-    GDAL.setstylestringdirectly(feature.ptr, style)
+    GDAL.setstylestringdirectly(feature, style)
 
 # """
 #     OGR_F_GetStyleTable(OGRFeatureH hFeat) -> OGRStyleTableH
@@ -912,18 +904,18 @@ setstylestringdirectly(feature::Feature, style::AbstractString) =
 
 
 "Returns the native data for the feature."
-getnativedata(feature::Feature) = GDAL.getnativedata(feature.ptr)
+getnativedata(feature::Feature) = GDAL.getnativedata(feature)
 
 "Sets the native data for the feature."
 setnativedata(feature::Feature, data::AbstractString) =
-    GDAL.setnativedata(feature.ptr, data)
+    GDAL.setnativedata(feature, data)
 
 "Returns the native media type for the feature."
-getmediatype(feature::Feature) = GDAL.getnativemediatype(feature.ptr)
+getmediatype(feature::Feature) = GDAL.getnativemediatype(feature)
 
 "Sets the native media type for the feature."
 setmediatype(feature::Feature, mediatype::AbstractString) =
-    GDAL.setnativemediatype(feature.ptr, mediatype)
+    GDAL.setnativemediatype(feature, mediatype)
 
 """
 Fill unset fields with default values that might be defined.
@@ -934,7 +926,7 @@ Fill unset fields with default values that might be defined.
 * **papszOptions**: unused currently. Must be set to NULL.
 """
 fillunset(feature::Feature, notnull::Bool=true) =
-    GDAL.fillunsetwithdefault(feature.ptr, notnull)
+    GDAL.fillunsetwithdefault(feature, notnull)
 
 """
 Validate that a feature meets constraints of its schema.
@@ -950,10 +942,10 @@ Validate that a feature meets constraints of its schema.
 TRUE if all enabled validation tests pass.
 """
 validate(feature::Feature, flags::Integer, emiterror::Bool) =
-    Bool(GDAL.validate(feature.ptr, flags, emiterror))
+    Bool(GDAL.validate(feature, flags, emiterror))
 
 "Fetch the schema information for this layer."
-getlayerdefn(layer::FeatureLayer) = FeatureDefn(GDAL.getlayerdefn(layer.ptr))
+getlayerdefn(layer::FeatureLayer) = GDAL.getlayerdefn(layer)
 
 """
 Find the index of field in a layer.
@@ -962,7 +954,7 @@ Find the index of field in a layer.
 field index, or -1 if the field doesn't exist
 """
 findfieldindex(layer::FeatureLayer, field::AbstractString, exactmatch::Bool) =
-    GDAL.findfieldindex(layer.ptr, field, exactmatch)
+    GDAL.findfieldindex(layer, field, exactmatch)
 
 """
 Fetch the feature count in this layer.
@@ -976,7 +968,7 @@ Fetch the feature count in this layer.
 feature count, -1 if count not known.
 """
 nfeature(layer::FeatureLayer, force::Bool=false) =
-    GDAL.getfeaturecount(layer.ptr, force)
+    GDAL.getfeaturecount(layer, force)
 
 # """
 #     OGR_L_GetExtent(OGRLayerH,
@@ -1041,7 +1033,7 @@ OGRERR_NONE on success.
 """
 function createfield(layer::FeatureLayer, field::FieldDefn,
                      approx::Bool = false)
-    result = GDAL.createfield(layer.ptr, field.ptr, approx)
+    result = GDAL.createfield(layer, field, approx)
     if result != GDAL.OGRERR_NONE
         error("Failed to create new field")
     end
@@ -1061,7 +1053,7 @@ OGRERR_NONE on success.
 """
 function creategeomfield(layer::FeatureLayer, field::GeomFieldDefn,
                      approx::Bool = false)
-    result = GDAL.creategeomfield(layer.ptr, field.ptr, approx)
+    result = GDAL.creategeomfield(layer, field, approx)
     if result != GDAL.OGRERR_NONE
         error("Failed to create new field")
     end
@@ -1235,7 +1227,7 @@ end
 This method returns the name of the underlying database column being used as
 the geometry column, or "" if not supported.
 """
-getgeomcolumn(layer::FeatureLayer) = GDAL.getgeometrycolumn(layer.ptr)
+getgeomcolumn(layer::FeatureLayer) = GDAL.getgeometrycolumn(layer)
 
 """
 Set which fields can be omitted when retrieving features from the layer.
@@ -1249,7 +1241,7 @@ OGRERR_NONE if all field names have been resolved (even if the driver does not
 support this method)
 """
 function setignoredfields(layer::FeatureLayer, fieldnames)
-    GDAL.setignoredfields(layer.ptr, Ptr{Ptr{UInt8}}(pointer(fieldnames)))
+    GDAL.setignoredfields(layer, Ptr{Ptr{UInt8}}(pointer(fieldnames)))
 end
 
 
@@ -1272,8 +1264,7 @@ OGRERR_NONE otherwise.
 """
 function intersection(input::FeatureLayer, method::FeatureLayer,
                       result::FeatureLayer)
-    result = GDAL.intersection(input.ptr, method.ptr, result.ptr,
-                               C_NULL, C_NULL, C_NULL)
+    result = GDAL.intersection(input, method, result, C_NULL, C_NULL, C_NULL)
     if result != GDAL.OGRERR_NONE
         error("Failed to compute the intersection of the two layers")
     end
@@ -1297,8 +1288,7 @@ an error code if there was an error or the execution was interrupted,
 OGRERR_NONE otherwise.
 """
 function union(input::FeatureLayer, method::FeatureLayer, result::FeatureLayer)
-    result = GDAL.union(input.ptr, method.ptr, result.ptr,
-                        C_NULL, C_NULL, C_NULL)
+    result = GDAL.union(input, method, result, C_NULL, C_NULL, C_NULL)
     if result != GDAL.OGRERR_NONE
         error("Failed to compute the union of the two layers")
     end
@@ -1323,8 +1313,7 @@ OGRERR_NONE otherwise.
 """
 function symdifference(input::FeatureLayer, method::FeatureLayer,
                        result::FeatureLayer)
-    result = GDAL.symdifference(input.ptr, method.ptr, result.ptr,
-                                C_NULL, C_NULL, C_NULL)
+    result = GDAL.symdifference(input, method, result, C_NULL, C_NULL, C_NULL)
     if result != GDAL.OGRERR_NONE
         error("Failed to compute the sym difference of the two layers")
     end
@@ -1349,8 +1338,7 @@ OGRERR_NONE otherwise.
 """
 function identity(input::FeatureLayer, method::FeatureLayer,
                   result::FeatureLayer)
-    result = GDAL.identity(input.ptr, method.ptr, result.ptr,
-                           C_NULL, C_NULL, C_NULL)
+    result = GDAL.identity(input, method, result, C_NULL, C_NULL, C_NULL)
     if result != GDAL.OGRERR_NONE
         error("Failed to compute the identity of the two layers")
     end
@@ -1375,8 +1363,7 @@ OGRERR_NONE otherwise.
 """
 function update(input::FeatureLayer, method::FeatureLayer,
                 result::FeatureLayer)
-    result = GDAL.update(input.ptr, method.ptr, result.ptr,
-                         C_NULL, C_NULL, C_NULL)
+    result = GDAL.update(input, method, result, C_NULL, C_NULL, C_NULL)
     if result != GDAL.OGRERR_NONE
         error("Failed to update the layer")
     end
@@ -1401,8 +1388,7 @@ OGRERR_NONE otherwise.
 """
 function clip(input::FeatureLayer, method::FeatureLayer,
               result::FeatureLayer)
-    result = GDAL.clip(input.ptr, method.ptr, result.ptr,
-                       C_NULL, C_NULL, C_NULL)
+    result = GDAL.clip(input, method, result, C_NULL, C_NULL, C_NULL)
     if result != GDAL.OGRERR_NONE
         error("Failed to clip the input layer")
     end
@@ -1427,8 +1413,7 @@ OGRERR_NONE otherwise.
 """
 function erase(input::FeatureLayer, method::FeatureLayer,
                result::FeatureLayer)
-    result = GDAL.erase(input.ptr, method.ptr, result.ptr,
-                        C_NULL, C_NULL, C_NULL)
+    result = GDAL.erase(input, method, result, C_NULL, C_NULL, C_NULL)
     if result != GDAL.OGRERR_NONE
         error("Failed to remove areas that are covered by the method layer.")
     end

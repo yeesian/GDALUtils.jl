@@ -1,19 +1,14 @@
-# """
-#     OSRAxisEnumToName(OGRAxisOrientation eOrientation) -> const char *
-# Return the string representation for the OGRAxisOrientation enumeration.
-# ### Returns
-# an internal string
-# """
-# function axisenumtoname(eOrientation::OGRAxisOrientation)
-#     bytestring(ccall((:OSRAxisEnumToName,libgdal),Cstring,(OGRAxisOrientation,),eOrientation))
-# end
-
+"""
+Return the string representation for the OGRAxisOrientation enumeration.
+"""
+axisenumtoname(orientation::Integer) =
+    bytestring(ccall((:OSRAxisEnumToName,GDAL.libgdal),Cstring,(GDAL.OGRAxisOrientation,),orientation))
 
 """
     OSRNewSpatialReference(const char * pszWKT) -> OGRSpatialReferenceH
 Constructor.
 """
-createspatialref(wkt::AbstractString="") = SpatialRef(GDAL.newspatialreference(wkt))
+SpatialRef(wkt::AbstractString="") = GDAL.newspatialreference(wkt)
 
 # """
 #     OSRCloneGeogCS(OGRSpatialReferenceH hSource) -> OGRSpatialReferenceH
@@ -22,24 +17,6 @@ createspatialref(wkt::AbstractString="") = SpatialRef(GDAL.newspatialreference(w
 # function clonegeogcs(arg1::Ptr{OGRSpatialReferenceH})
 #     checknull(ccall((:OSRCloneGeogCS,libgdal),Ptr{OGRSpatialReferenceH},(Ptr{OGRSpatialReferenceH},),arg1))
 # end
-
-
-"""
-    OSRClone(OGRSpatialReferenceH hSRS) -> OGRSpatialReferenceH
-Make a duplicate of this OGRSpatialReference.
-"""
-clone(spref::SpatialRef) = SpatialRef(GDAL.clone(spref.ptr))
-
-"""
-    OSRDestroySpatialReference(OGRSpatialReferenceH hSRS) -> void
-OGRSpatialReference destructor.
-### Parameters
-* **hSRS**: the object to delete
-"""
-function destroy(spref::SpatialRef)
-    GDAL.destroy(spref.ptr)
-    spref.ptr = C_NULL
-end
 
 # """
 #     OSRReference(OGRSpatialReferenceH hSRS) -> int
@@ -110,14 +87,14 @@ end
 Initialize SRS based on EPSG GCS or PCS code.
 """
 function fromEPSG!(spref::SpatialRef, code::Integer)
-    result = GDAL.importfromepsg(spref.ptr, code)
+    result = GDAL.importfromepsg(spref, code)
     if result != GDAL.OGRERR_NONE
         error("Failed to initializ SRS based on EPSG $code")
     end
     spref
 end
 
-fromEPSG(code::Integer) = fromEPSG!(createspatialref(), code)
+fromEPSG(code::Integer) = fromEPSG!(SpatialRef(), code)
 
 """
     OSRImportFromEPSGA(OGRSpatialReferenceH hSRS,
@@ -125,14 +102,14 @@ fromEPSG(code::Integer) = fromEPSG!(createspatialref(), code)
 Initialize SRS based on EPSG GCS or PCS code.
 """
 function fromEPSGA!(spref::SpatialRef, code::Integer)
-    result = GDAL.importfromepsga(spref.ptr, code)
+    result = GDAL.importfromepsga(spref, code)
     if result != GDAL.OGRERR_NONE
         error("Failed to initializ SRS based on EPSGA $code")
     end
     spref
 end
 
-fromEPSGA(code::Integer) = fromEPSGA!(createspatialref(), code)
+fromEPSGA(code::Integer) = fromEPSGA!(SpatialRef(), code)
 
 
 # """
@@ -151,14 +128,14 @@ fromEPSGA(code::Integer) = fromEPSGA!(createspatialref(), code)
 Import PROJ.4 coordinate string.
 """
 function fromPROJ4!(spref::SpatialRef, projstr::AbstractString)
-    result = GDAL.importfromproj4(spref.ptr, projstr)
+    result = GDAL.importfromproj4(spref, projstr)
     if result != GDAL.OGRERR_NONE
         error("Failed to initialize SRS based on PROJ4 string: $projstr")
     end
     spref
 end
 
-fromPROJ4(projstr::AbstractString) = fromPROJ4!(createspatialref(), projstr)
+fromPROJ4(projstr::AbstractString) = fromPROJ4!(SpatialRef(), projstr)
 
 
 # """
@@ -201,14 +178,14 @@ fromPROJ4(projstr::AbstractString) = fromPROJ4!(createspatialref(), projstr)
 Import coordinate system from XML format (GML only currently).
 """
 function fromXML!(spref::SpatialRef, xmlstr::AbstractString)
-    result = GDAL.importfromxml(spref.ptr, xmlstr)
+    result = GDAL.importfromxml(spref, xmlstr)
     if result != GDAL.OGRERR_NONE
         error("Failed to initialize SRS based on XML string: $xmlstr")
     end
     spref
 end
 
-fromXML(xmlstr::AbstractString) = fromXML!(createspatialref(), xmlstr)
+fromXML(xmlstr::AbstractString) = fromXML!(SpatialRef(), xmlstr)
 
 
 # """
@@ -289,14 +266,14 @@ fromXML(xmlstr::AbstractString) = fromXML!(createspatialref(), xmlstr)
 Set spatial reference from a URL.
 """
 function fromURL!(spref::SpatialRef, url::AbstractString)
-    result = GDAL.importfromurl(spref.ptr, url)
+    result = GDAL.importfromurl(spref, url)
     if result != GDAL.OGRERR_NONE
         error("Failed to initialize SRS from URL: $url")
     end
     spref
 end
 
-fromURL(url::AbstractString) = fromURL!(createspatialref(), url)
+fromURL(url::AbstractString) = fromURL!(SpatialRef(), url)
 
 """
 Convert this SRS into WKT format.
@@ -310,7 +287,7 @@ currently OGRERR_NONE is always returned, but the future it is possible error co
 """
 function toWKT(spref::SpatialRef)
     wktptr = Ref{Cstring}()
-    result = GDAL.exporttowkt(spref.ptr, wktptr)
+    result = GDAL.exporttowkt(spref, wktptr)
     (result != GDAL.OGRERR_NONE) && error("Failed to convert this SRS into WKT format")
     bytestring(wktptr[])
     #wktstr = bytestring(wktptr[])
@@ -331,7 +308,7 @@ currently OGRERR_NONE is always returned, but the future it is possible error co
 """
 function toWKT(spref::SpatialRef, simplify::Bool)
     wktptr = Ref{Cstring}()
-    result = GDAL.exporttoprettywkt(spref.ptr, wktptr, simplify)
+    result = GDAL.exporttoprettywkt(spref, wktptr, simplify)
     (result != GDAL.OGRERR_NONE) && error("Failed to convert this SRS into pretty WKT")
     bytestring(wktptr[])
     #wktstr = bytestring(wktptr[])
@@ -426,7 +403,7 @@ end
 Convert in place to ESRI WKT format.
 """
 function morphtoesri(spref::SpatialRef)
-    result = GDAL.morphtoesri(spref.ptr)
+    result = GDAL.morphtoesri(spref)
     if result != GDAL.OGRERR_NONE
         error("Failed to convert in place to ESRI WKT format")
     end
@@ -438,7 +415,7 @@ end
 Convert in place from ESRI WKT format.
 """
 function morphfromesri(spref::SpatialRef)
-    result = GDAL.morphfromesri(spref.ptr)
+    result = GDAL.morphfromesri(spref)
     if result != GDAL.OGRERR_NONE
         error("Failed to convert in place from ESRI WKT format")
     end
@@ -460,7 +437,7 @@ Returns
 OGRERR_NONE on success.
 """
 function setattrvalue(spref::SpatialRef, path::AbstractString, value::AbstractString)
-    result = GDAL.setattrvalue(spref.ptr, path, value)
+    result = GDAL.setattrvalue(spref, path, value)
     (result != GDAL.OGRERR_NONE) && error("Failed to set attribute $path to value $value")
 end
 
@@ -479,7 +456,7 @@ Returns
 the requested value, or NULL if it fails for any reason.
 """
 getattrvalue(spref::SpatialRef, name::AbstractString, iChild::Integer) =
-    GDAL.getattrvalue(spref.ptr, name, iChild)
+    GDAL.getattrvalue(spref, name, iChild)
 
 
 """
@@ -496,7 +473,7 @@ Returns
 OGRERR_NONE on success.
 """
 function setangularunits(spref::SpatialRef, units::AbstractString, angle::Real)
-    result = GDAL.setangularunits(spref.ptr, units, angle)
+    result = GDAL.setangularunits(spref, units, angle)
     (result != GDAL.OGRERR_NONE) && error("Failed to set angular units to $angle $units")
 end
 
@@ -524,7 +501,7 @@ Returns
 OGRERR_NONE on success.
 """
 function setlinearunits(spref::SpatialRef,name::AbstractString,tometers::Real)
-    result = GDAL.setlinearunits(spref.ptr, name, tometers)
+    result = GDAL.setlinearunits(spref, name, tometers)
     (result != GDAL.OGRERR_NONE) && error("Failed to set linear units")
 end
 
@@ -548,7 +525,7 @@ OGR 1.9.0
 """
 function settargetlinearunits(spref::SpatialRef, targetkey::AbstractString,
                               name::AbstractString, tometers::Real)
-    result = GDAL.settargetlinearunits(spref.ptr, targetkey, name, tometers)
+    result = GDAL.settargetlinearunits(spref, targetkey, name, tometers)
     (result != GDAL.OGRERR_NONE) && error("Failed to set target linear units")
 end
 
@@ -597,37 +574,37 @@ end
     OSRIsGeographic(OGRSpatialReferenceH hSRS) -> int
 Check if geographic coordinate system.
 """
-isgeographic(spref::SpatialRef) = Bool(GDAL.isgeographic(spref.ptr))
+isgeographic(spref::SpatialRef) = Bool(GDAL.isgeographic(spref))
 
 """
     OSRIsLocal(OGRSpatialReferenceH hSRS) -> int
 Check if local coordinate system.
 """
-islocal(spref::SpatialRef) = Bool(GDAL.islocal(spref.ptr))
+islocal(spref::SpatialRef) = Bool(GDAL.islocal(spref))
 
 """
     OSRIsProjected(OGRSpatialReferenceH hSRS) -> int
 Check if projected coordinate system.
 """
-isprojected(spref::SpatialRef) = Bool(GDAL.isprojected(spref.ptr))
+isprojected(spref::SpatialRef) = Bool(GDAL.isprojected(spref))
 
 """
     OSRIsCompound(OGRSpatialReferenceH hSRS) -> int
 Check if the coordinate system is compound.
 """
-iscompound(spref::SpatialRef) = Bool(GDAL.iscompound(spref.ptr))
+iscompound(spref::SpatialRef) = Bool(GDAL.iscompound(spref))
 
 """
     OSRIsGeocentric(OGRSpatialReferenceH hSRS) -> int
 Check if geocentric coordinate system.
 """
-isgeocentric(spref::SpatialRef) = Bool(GDAL.isgeocentric(spref.ptr))
+isgeocentric(spref::SpatialRef) = Bool(GDAL.isgeocentric(spref))
 
 """
     OSRIsVertical(OGRSpatialReferenceH hSRS) -> int
 Check if vertical coordinate system.
 """
-isvertical(spref::SpatialRef) = Bool(GDAL.isvertical(spref.ptr))
+isvertical(spref::SpatialRef) = Bool(GDAL.isvertical(spref))
 
 """
     OSRIsSameGeogCS(OGRSpatialReferenceH hSRS1,
@@ -635,7 +612,7 @@ isvertical(spref::SpatialRef) = Bool(GDAL.isvertical(spref.ptr))
 Do the GeogCS'es match?
 """
 issamegeogcs(spref1::SpatialRef, spref2::SpatialRef) =
-    Bool(GDAL.issamegeogcs(spref1.ptr, spref2.ptr))
+    Bool(GDAL.issamegeogcs(spref1, spref2))
 
 """
     OSRIsSameVertCS(OGRSpatialReferenceH hSRS1,
@@ -643,7 +620,7 @@ issamegeogcs(spref1::SpatialRef, spref2::SpatialRef) =
 Do the VertCS'es match?
 """
 issamevertcs(spref1::SpatialRef, spref2::SpatialRef) =
-    Bool(GDAL.issamevertcs(spref1.ptr, spref2.ptr))
+    Bool(GDAL.issamevertcs(spref1, spref2))
 
 """
     OSRIsSame(OGRSpatialReferenceH hSRS1,
@@ -651,7 +628,7 @@ issamevertcs(spref1::SpatialRef, spref2::SpatialRef) =
 Do these two spatial references describe the same system ?
 """
 issame(spref1::SpatialRef, spref2::SpatialRef) =
-    Bool(GDAL.issame(spref1.ptr, spref2.ptr))
+    Bool(GDAL.issame(spref1, spref2))
 
 """
     OSRSetLocalCS(OGRSpatialReferenceH hSRS,
@@ -659,7 +636,7 @@ issame(spref1::SpatialRef, spref2::SpatialRef) =
 Set the user visible LOCAL_CS name.
 """
 function setlocalcs(spref::SpatialRef, name::AbstractString)
-    result = GDAL.setlocalcs(spref.ptr, name)
+    result = GDAL.setlocalcs(spref, name)
     (result != GDAL.OGRERR_NONE) && error("Failed to set LOCAL_CS")
 end
 
@@ -669,7 +646,7 @@ end
 Set the user visible PROJCS name.
 """
 function setprojcs(spref::SpatialRef, name::AbstractString)
-    result = GDAL.setprojcs(spref.ptr, name)
+    result = GDAL.setprojcs(spref, name)
     (result != GDAL.OGRERR_NONE) && error("Failed to set PROJCS")
 end
 
@@ -684,7 +661,7 @@ Returns
 OGRERR_NONE on success.
 """
 function setgeoccs(spref::SpatialRef, name::AbstractString)
-    result = GDAL.setgeoccs(spref.ptr, name)
+    result = GDAL.setgeoccs(spref, name)
     (result != GDAL.OGRERR_NONE) && error("Failed to set GEOGCS")
 end
 
@@ -694,7 +671,7 @@ end
 Set a GeogCS based on well known name.
 """
 function setwellknowngeogcs(spref::SpatialRef, name::AbstractString)
-    result = GDAL.setwellknowngeogcs(spref.ptr, name)
+    result = GDAL.setwellknowngeogcs(spref, name)
     (result != GDAL.OGRERR_NONE) && error("Failed to set GeogCS based on well known name.")
 end
 
@@ -714,7 +691,7 @@ end
 Copy GEOGCS from another OGRSpatialReference.
 """
 function copygeogcsfrom(target::SpatialRef, source::SpatialRef)
-    result = GDAL.copygeogcsfrom(target.ptr, source.ptr)
+    result = GDAL.copygeogcsfrom(target, source)
     (result != GDAL.OGRERR_NONE) && error("Failed to copy GEOGCS from another OGRSpatialReference.")
 end
 
@@ -740,7 +717,7 @@ Returns
 OGRERR_NONE on success.
 """
 function settowgs84(spref::SpatialRef,dx::Real,dy::Real,dz::Real,ex::Real,ey::Real,ez::Real,ppm::Real)
-    result = GDAL.settowgs84(spref.ptr,dx,dy,dz,ex,ey,ez,ppm)
+    result = GDAL.settowgs84(spref,dx,dy,dz,ex,ey,ez,ppm)
     (result != GDAL.OGRERR_NONE) && error("Failed to set the Bursa-Wolf conversion to WGS84.")
 end
 
@@ -755,7 +732,7 @@ Returns
 OGRERR_NONE on success, or OGRERR_FAILURE if there is no TOWGS84 node available.
 """
 function gettowgs84!(spref::SpatialRef,buffer::Vector{Cdouble})
-    result = gettowgs84(spref.ptr, pointer(buffer), length(buffer))
+    result = gettowgs84(spref, pointer(buffer), length(buffer))
     (result != GDAL.OGRERR_NONE) && error("Failed to fetch TOWGS84 parameters")
     buffer
 end
@@ -1730,7 +1707,7 @@ Create transformation object.
 NULL on failure or a ready to use transformation object.
 """
 createcoordtrans(source::SpatialRef, target::SpatialRef) =
-    CoordTransform(GDAL.octnewcoordinatetransformation(source.ptr, target.ptr))
+    CoordTransform(GDAL.octnewcoordinatetransformation(source, target))
 
 """
     OCTDestroyCoordinateTransformation(OGRCoordinateTransformationH hCT) -> void
@@ -1739,8 +1716,8 @@ OGRCoordinateTransformation destructor.
 * **hCT**: the object to delete
 """
 function destroy(obj::CoordTransform)
-    GDAL.octdestroycoordinatetransformation(obj.ptr)
-    obj.ptr = C_NULL
+    GDAL.octdestroycoordinatetransformation(obj)
+    obj = C_NULL
 end
 
 """
@@ -1765,7 +1742,7 @@ function transform!(obj::CoordTransform,
     n = length(xvertices)
     @assert length(yvertices) == n
     @assert length(zvertices) == n
-    Bool(GDAL.octtransform(obj.ptr, n, pointer(xvertices),
+    Bool(GDAL.octtransform(obj, n, pointer(xvertices),
                            pointer(yvertices), pointer(zvertices)))
 end
 

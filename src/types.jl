@@ -1,49 +1,14 @@
-type FeatureLayer
-    ptr::Ptr{GDAL.OGRLayerH}
-end
-
-type Feature
-    ptr::Ptr{GDAL.OGRFeatureH}
-end
-
-type FeatureDefn
-    ptr::Ptr{GDAL.OGRFeatureDefnH}
-end
-
-type FieldDefn
-    ptr::Ptr{GDAL.OGRFieldDefnH}
-end
-
-type Geometry
-    ptr::Ptr{GDAL.OGRGeometryH}
-end
-
-type GeomFieldDefn
-    ptr::GDAL.OGRGeomFieldDefnH
-end
-
-type SpatialRef
-    ptr::Ptr{GDAL.OGRSpatialReferenceH}
-end
-
-type CoordTransform
-    ptr::Ptr{GDAL.OGRCoordinateTransformationH}
-end
-
-type Driver{T}
-    ptr::Ptr{T}
-end
-
-type RasterBand
-    ptr::Ptr{GDAL.GDALRasterBandH}
-end
-
-type Dataset
-    ptr::Ptr{GDAL.GDALDatasetH}
-end
-
-nullify(obj) = (obj.ptr = C_NULL)
-checknull(obj) = (obj.ptr == C_NULL)
+typealias FeatureLayer Ptr{GDAL.OGRLayerH}
+typealias Feature Ptr{GDAL.OGRFeatureH}
+typealias FeatureDefn Ptr{GDAL.OGRFeatureDefnH}
+typealias FieldDefn Ptr{GDAL.OGRFieldDefnH}
+typealias Geometry Ptr{GDAL.OGRGeometryH}
+typealias GeomFieldDefn GDAL.OGRGeomFieldDefnH
+typealias SpatialRef Ptr{GDAL.OGRSpatialReferenceH}
+typealias CoordTransform Ptr{GDAL.OGRCoordinateTransformationH}
+typealias Driver Ptr{GDAL.GDALDriverH}
+typealias RasterBand Ptr{GDAL.GDALRasterBandH}
+typealias Dataset Ptr{GDAL.GDALDatasetH}
 
 "return the corresponding `DataType` in julia"
 const _jltype = Dict{GDAL.GDALDataType, DataType}(
@@ -119,56 +84,53 @@ const _geomname = Dict{GDAL.OGRwkbGeometryType, Symbol}(
 
 const _access = Dict{UInt32, Symbol}(0 => :ReadOnly, 1 => :Update)
 
-# """
-#     GDALGetDataTypeSize(GDALDataType) -> int
-# Get data type size in bits.
-# ### Parameters
-# * **eDataType**: type, such as GDT_Byte.
-# ### Returns
-# the number of bits or zero if it is not recognised.
-# """
-# function getdatatypesize(arg1::GDALDataType)
-#     ccall((:GDALGetDataTypeSize,libgdal),Cint,(GDALDataType,),arg1)
-# end
+"""
+    GDALGetDataTypeSize(GDALDataType) -> int
+Get data type size in bits.
+### Parameters
+* **eDataType**: type, such as GDT_Byte.
+### Returns
+the number of bits or zero if it is not recognised.
+"""
+getdatatypesize(dt::Integer) =
+    ccall((:GDALGetDataTypeSize,GDAL.libgdal),Cint,(GDAL.GDALDataType,),dt)
 
-# """
-#     GDALGetDataTypeName(GDALDataType) -> const char *
-# Get name of data type.
-# ### Parameters
-# * **eDataType**: type to get name of.
-# ### Returns
-# string corresponding to existing data type or NULL pointer if invalid type given.
-# """
-# function getdatatypename(arg1::GDALDataType)
-#     bytestring(ccall((:GDALGetDataTypeName,libgdal),Cstring,(GDALDataType,),arg1))
-# end
+"""
+    GDALGetDataTypeName(GDALDataType) -> const char *
+Get name of data type.
+### Parameters
+* **eDataType**: type to get name of.
+### Returns
+string corresponding to existing data type or NULL pointer if invalid type given.
+"""
+getdatatypename(dt::Integer) =
+    bytestring(ccall((:GDALGetDataTypeName,GDAL.libgdal),Cstring,(GDAL.GDALDataType,),dt))
 
-# """
-#     GDALGetDataTypeByName(const char *) -> GDALDataType
-# Get data type by symbolic name.
-# ### Parameters
-# * **pszName**: string containing the symbolic name of the type.
-# ### Returns
-# GDAL data type.
-# """
-# function getdatatypebyname(arg1)
-#     ccall((:GDALGetDataTypeByName,libgdal),GDALDataType,(Cstring,),arg1)
-# end
+"""
+    GDALGetDataTypeByName(const char *) -> GDALDataType
+Get data type by symbolic name.
+### Parameters
+* **pszName**: string containing the symbolic name of the type.
+### Returns
+GDAL data type.
+"""
+function getdatatypebyname(name::AbstractString)
+    ccall((:GDALGetDataTypeByName,GDAL.libgdal),GDAL.GDALDataType,(Cstring,),name)
+end
 
-# """
-#     GDALDataTypeUnion(GDALDataType,
-#                       GDALDataType) -> GDALDataType
-# Return the smallest data type that can fully express both input data types.
-# ### Parameters
-# * **eType1**: first data type.
-# * **eType2**: second data type.
-# ### Returns
-# a data type able to express eType1 and eType2.
-# """
-# function datatypeunion(arg1::GDALDataType,arg2::GDALDataType)
-#     ccall((:GDALDataTypeUnion,libgdal),GDALDataType,(GDALDataType,GDALDataType),arg1,arg2)
-# end
-
+"""
+    GDALDataTypeUnion(GDALDataType,
+                      GDALDataType) -> GDALDataType
+Return the smallest data type that can fully express both input data types.
+### Parameters
+* **eType1**: first data type.
+* **eType2**: second data type.
+### Returns
+a data type able to express eType1 and eType2.
+"""
+function datatypeunion(dt1::Integer,dt2::Integer)
+    ccall((:GDALDataTypeUnion,GDAL.libgdal),GDAL.GDALDataType,(GDAL.GDALDataType,GDAL.GDALDataType),dt1,dt2)
+end
 
 # """
 #     GDALAdjustValueToDataType(GDALDataType eDT,
@@ -231,25 +193,24 @@ not be modified or freed by the application.
 ### Returns
 string corresponding to color interpretation or NULL pointer if invalid enumerator given.
 """
-getcolorinterpname(color::GDAL.GDALColorInterp) =
-    GDAL.getcolorinterpretationname(color)
+getcolorinterpname(color::Integer) =
+    bytestring(ccall((:GDALGetColorInterpretationName,GDAL.libgdal),Cstring,(GDAL.GDALPaletteInterp,),color))
 
 # GDALGetColorInterpretationByName(const char * pszName) -> GDALColorInterp
 "Get color interpretation corresponding to the given symbolic name."
 getcolorinterp(name::AbstractString) = GDAL.getcolorinterpretationbyname(name)
 
 
-# """
-#     GDALGetPaletteInterpretationName(GDALPaletteInterp) -> const char *
-# Get name of palette interpretation.
-# ### Parameters
-# * **eInterp**: palette interpretation to get name of.
-# ### Returns
-# string corresponding to palette interpretation.
-# """
-# function getpaletteinterpretationname(arg1::GDALPaletteInterp)
-#     bytestring(ccall((:GDALGetPaletteInterpretationName,libgdal),Cstring,(GDALPaletteInterp,),arg1))
-# end
+"""
+    GDALGetPaletteInterpretationName(GDALPaletteInterp) -> const char *
+Get name of palette interpretation.
+### Parameters
+* **eInterp**: palette interpretation to get name of.
+### Returns
+string corresponding to palette interpretation.
+"""
+getpaletteinterpname(einterp::Integer) =
+    bytestring(ccall((:GDALGetPaletteInterpretationName,GDAL.libgdal),Cstring,(GDAL.GDALPaletteInterp,),einterp))
 
 # """
 #     OGR_GetFieldTypeName(OGRFieldType eType) -> const char *

@@ -19,12 +19,12 @@ GU.registerdrivers() do
         @fact GU.getname(GU.getcolorinterp(band)) --> "Gray"
 
         gotmin, gotmax = Ref(Cint(-1)), Ref(Cint(-1))
-        @test GDAL.getrasterminimum(band.ptr, gotmin) == 0.0
-        @test GDAL.getrastermaximum(band.ptr, gotmax) == 255.0
+        @test GDAL.getrasterminimum(band, gotmin) == 0.0
+        @test GDAL.getrastermaximum(band, gotmax) == 255.0
         @test gotmin[] == gotmax[] == 0
 
         @fact GU.noverview(band) --> 0
-        @test_throws GDAL.GDALError GDAL.getrastercolortable(band.ptr)
+        @test_throws GDAL.GDALError GDAL.getrastercolortable(band)
 
 
         # Reading Raster Data
