@@ -55,8 +55,9 @@ GU.registerdrivers() do
             data1 = Array(dtype, rows, cols)
             data2 = Array(dtype, rows, cols)
             # create the output image
-            GU.create("tmp/mosiac.img", GU.getdriver(ds1), cols, rows,
-                      1, GU.getdatatype(band1)) do dsout
+            GU.create("tmp/mosiac.img", GU.getdriver(ds1),
+                      width=cols, height=rows, nbands=1,
+                      dtype=GU.getdatatype(band1)) do dsout
                 
                 # read in doq1 and write it to the output
                 GU.rasterio!(band1, data1, cols1, rows1, 0, 0)
@@ -79,9 +80,9 @@ GU.registerdrivers() do
                 # build pyramids for the output
                 # gdal.SetConfigOption('HFA_USE_RRD', 'YES')
                 GU.buildoverviews(dsout,
-                                  Cint[2,4,8,16], # overview list
-                                                  # bandlist (omit to include all bands)
-                                  "NEAREST")      # resampling method (default: nearest)
+                                  Cint[2,4,8,16],       # overview list
+                                                        # bandlist (omit to include all bands)
+                                  resampling="NEAREST") # resampling method (default: nearest)
             end
         end
     end

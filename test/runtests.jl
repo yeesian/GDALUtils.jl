@@ -23,12 +23,12 @@ GU.registerdrivers() do
     end
 
     GU.create("pyrasterio/example.tif",
-                       "GTiff", # drivername
-                       500, # width
-                       300, # height
-                       1, # number of bands
-                       UInt8 # DataType
-              ) do raster
+              "GTiff", # drivername
+              width=500,
+              height=300,
+              nbands=1,
+              dtype=UInt8 # DataType
+            ) do raster
         image = fill(UInt8(127), (150, 250))
         GU.update!( raster,
                     image, # image to "burn" into the raster
@@ -38,7 +38,8 @@ GU.registerdrivers() do
     end
 
     GU.read("pyrasterio/RGB.byte.tif") do src
-    GU.create("pyrasterio/example2.tif", "GTiff", 500, 300, 3, UInt8) do dst
+    GU.create("pyrasterio/example2.tif", "GTiff",
+              width=500, height=300, nbands=3, dtype=UInt8) do dst
         rgb = GU.fetch(src, Cint[1,2,3]) # fetch bands 1 - 3
         # You can update all 3 bands simultaneously
         GU.update!(dst, rgb, # image to "burn" into destination dataset
@@ -50,7 +51,8 @@ GU.registerdrivers() do
 
     GU.read("pyrasterio/RGB.byte.tif") do src
         rgb = GU.fetch(src, Cint[1,2,3], 350:410, 350:450)
-        GU.create("pyrasterio/example3.tif", "GTiff", 500, 300, 3, eltype(rgb)) do dst
+        GU.create("pyrasterio/example3.tif", "GTiff",
+                  width=500, height=300, nbands=3, dtype=eltype(rgb)) do dst
             GU.update!(dst, rgb, Cint[1,2,3], 1:240, 1:400)
         end
     end

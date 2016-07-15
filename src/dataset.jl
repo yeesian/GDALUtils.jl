@@ -51,7 +51,7 @@ supported in the future.
 """
 copywholeraster(source::Dataset, dest::Dataset) =
     GDAL.datasetcopywholeraster(source, dest, Ptr{Ptr{UInt8}}(pointer(C_NULL)),
-                                Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL)
+                                ProgressFunc(C_NULL), C_NULL)
 
 """
 Create a copy of a dataset.
@@ -95,13 +95,13 @@ avoid prior destruction of existing dataset.
 ### Returns
 a pointer to the newly created dataset (may be read-only access).
 """
-createcopy(filename::AbstractString, dataset::Dataset, driver::Driver,
+createcopy(filename::AbstractString, dataset::Dataset, driver::Driver;
            strict::Bool = false) =
     GDAL.createcopy(driver, filename, dataset, strict, C_NULL,
-                    Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL)
+                    ProgressFunc(C_NULL), C_NULL)
 
-function createcopy(f::Function, args...)
-    ds = createcopy(args...)
+function createcopy(f::Function, args...; kwargs...)
+    ds = createcopy(args...; kwargs...)
     try
         f(ds)
     finally
@@ -110,7 +110,7 @@ function createcopy(f::Function, args...)
 end
 
 create(filename::AbstractString,
-       driver::Driver,
+       driver::Driver;
        width::Integer = 0,
        height::Integer = 0,
        nbands::Integer = 0,
@@ -120,7 +120,7 @@ create(filename::AbstractString,
                 _gdaltype[dtype], Ptr{Ptr{UInt8}}(C_NULL))
 
 create(filename::AbstractString,
-       drivername::AbstractString,
+       drivername::AbstractString;
        width::Integer = 0,
        height::Integer = 0,
        nbands::Integer = 0,
@@ -128,8 +128,8 @@ create(filename::AbstractString,
     GDAL.create(getdriver(drivername), filename, width, height, 
                 nbands, _gdaltype[dtype], Ptr{Ptr{UInt8}}(C_NULL))
 
-function create(f::Function, args...)
-    ds = create(args...)
+function create(f::Function, args...; kwargs...)
+    ds = create(args...; kwargs...)
     try
         f(ds)
     finally
@@ -176,7 +176,7 @@ driver on how to access a dataset. It should be in UTF-8 encoding.
 * `access`      the desired access, either `GA_Update` or `GA_ReadOnly`. Many
 drivers support only read only access.
 """
-function read(filename::AbstractString, shared::Bool = false)
+function read(filename::AbstractString; shared::Bool = false)
     if shared
         return GDAL.openshared(filename, GDAL.GA_ReadOnly)
     else
@@ -184,8 +184,8 @@ function read(filename::AbstractString, shared::Bool = false)
     end
 end
 
-function read(f::Function, args...)
-    ds = read(args...)
+function read(f::Function, args...; kwargs...)
+    ds = read(args...; kwargs...)
     try
         f(ds)
     finally
@@ -193,7 +193,7 @@ function read(f::Function, args...)
     end
 end
 
-function update(filename::AbstractString, shared::Bool = false)
+function update(filename::AbstractString; shared::Bool = false)
     if shared
         return GDAL.openshared(filename, GDAL.GA_Update)
     else
@@ -201,8 +201,8 @@ function update(filename::AbstractString, shared::Bool = false)
     end
 end
 
-function update(f::Function, args...)
-    ds = update(args...)
+function update(f::Function, args...; kwargs...)
+    ds = update(args...; kwargs...)
     try
         f(ds)
     finally
@@ -211,30 +211,30 @@ function update(f::Function, args...)
 end
 
 function write(filename::AbstractString,
-               dataset::Dataset,
+               dataset::Dataset;
                strict::Bool = false)
     (dataset == C_NULL) && error("Can't write closed dataset")
-    GDAL.close(createcopy(filename, dataset, getdriver(dataset), strict))
+    GDAL.close(createcopy(filename, dataset, getdriver(dataset), strict=strict))
 end
 
 function write(dataset::Dataset,
                filename::AbstractString,
-               driver::Driver,
+               driver::Driver;
                strict::Bool = false)
     (dataset == C_NULL) && error("Can't write closed dataset")
-    GDAL.close(createcopy(filename, dataset, driver, strict))
+    GDAL.close(createcopy(filename, dataset, driver, strict=strict))
 end
 
 function write(dataset::Dataset,
                filename::AbstractString,
-               drivername::AbstractString,
+               drivername::AbstractString;
                strict::Bool = false)
     (dataset == C_NULL) && error("Can't write closed dataset")
-    GDAL.close(createcopy(filename, dataset, getdriver(name), strict))
+    GDAL.close(createcopy(filename, dataset, getdriver(name), strict=strict))
 end
 
-function write(f::Function, args...)
-    ds = write(args...)
+function write(f::Function, args...; kwargs...)
+    ds = write(args...; kwargs...)
     try
         f(ds)
     finally
@@ -505,21 +505,21 @@ call could be made:
                               GDALDummyProgress, NULL );
 ```
 """
-function buildoverviews(dataset::Dataset, overviewlist::Vector{Cint},
+function buildoverviews(dataset::Dataset, overviewlist::Vector{Cint};
                         resampling::AbstractString = "NEAREST")
     result = GDAL.buildoverviews(dataset, resampling, length(overviewlist),
                                  overviewlist, 0, C_NULL,
-                                 Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL)
+                                 ProgressFunc(C_NULL), C_NULL)
     (result == GDAL.CE_Failure) && error("Failed to build overviews")
 end
 
 function buildoverviews(dataset::Dataset,
-                        overviewlist::Vector{Cint},
+                        overviewlist::Vector{Cint};
                         bandlist::Vector{Cint} = Cint[],
                         resampling::AbstractString = "NEAREST")
     result = GDAL.buildoverviews(dataset, resampling, length(overviewlist),
                                  overviewlist, length(bandlist), bandlist,
-                                 Ptr{GDAL.GDALProgressFunc}(C_NULL), C_NULL)
+                                 ProgressFunc(C_NULL), C_NULL)
     (result == GDAL.CE_Failure) && error("Failed to build overviews")
 end
 

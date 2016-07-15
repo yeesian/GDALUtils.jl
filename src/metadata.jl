@@ -24,7 +24,7 @@ The returned string list is owned by the object, and may change at any time.
 It is formated as a "Name=value" list with the last pointer value being `NULL`.
 Note that relatively few formats return any metadata at this time.
 """
-getmetadata{T <: GDAL.GDALMajorObjectH}(obj::Ptr{T}, domain::AbstractString = "") =
+getmetadata{T <: GDAL.GDALMajorObjectH}(obj::Ptr{T}; domain::AbstractString = "") =
     loadstringlist(GDAL.C.GDALGetMetadata(obj, pointer(domain)))
 
 # """

@@ -18,9 +18,8 @@ GU.registerdrivers() do
         buffer3 = Array(Float32, ybsize, xbsize)
         ndvi    = Array(Float32, ybsize, xbsize)
         # create the output image
-        GU.create("tmp/ndvi.img",
-                  GU.getdriver(inDS),
-                  cols, rows, 1, Float32) do outDS
+        GU.create("tmp/ndvi.img", GU.getdriver(inDS),
+                  width=cols, height=rows, nbands=1, dtype=Float32) do outDS
             for ((i,j),(nrows,ncols)) in GU.BlockIterator(inband2)
                 GU.rasterio!(inband2, buffer2, ncols, nrows, j, i)
                 GU.rasterio!(inband3, buffer3, ncols, nrows, j, i)
@@ -53,7 +52,7 @@ GU.registerdrivers() do
             GU.buildoverviews(outDS,
                               Cint[2,4,8,16,32,64,128], # overview list
                                                         # bandlist (omit to include all bands)
-                              "NEAREST")                # resampling method (default: nearest)
+                              resampling="NEAREST")     # resampling method (default: nearest)
         end
     end
 end
