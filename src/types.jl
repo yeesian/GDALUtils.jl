@@ -9,6 +9,7 @@ typealias CoordTransform Ptr{GDAL.OGRCoordinateTransformationH}
 typealias Driver Ptr{GDAL.GDALDriverH}
 typealias RasterBand Ptr{GDAL.GDALRasterBandH}
 typealias Dataset Ptr{GDAL.GDALDatasetH}
+typealias ProgressFunc Ptr{GDAL.GDALProgressFunc}
 
 "return the corresponding `DataType` in julia"
 const _jltype = Dict{GDAL.GDALDataType, DataType}(

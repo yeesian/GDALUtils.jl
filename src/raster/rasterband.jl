@@ -520,7 +520,7 @@ function regenerateoverviews(rasterband::RasterBand,
                              resampling::AbstractString = "NEAREST")
     result = GDAL.regenerateoverviews(rasterband, noverviews, overviewbands,
                                       resampling,
-                                      Ptr{GDAL.GDALProgressFunc}(C_NULL),
+                                      ProgressFunc(C_NULL),
                                       C_NULL)
     (result == GDAL.CE_Failure) && error("Failed to regenerate overviews")
 end
