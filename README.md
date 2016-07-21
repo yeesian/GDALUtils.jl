@@ -1,7 +1,8 @@
 # GDALUtils
 Toying with experimental syntax for https://github.com/visr/GDAL.jl.
 
-Use at your own risk!
+# NOTICE
+**Warning**: This package is succeeded by the [ArchGDAL.jl](https://github.com/yeesian/ArchGDAL.jl) package, and is now *abandoned*.
 
 ```julia
   | | |_| | | | (_| |  |  Version 0.4.2 (2015-12-06 21:47 UTC)
